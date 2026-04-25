@@ -1,0 +1,62 @@
+<article class="doc-page">
+  <h1>guide.txt</h1>
+
+  <div class="doc-section">
+    <h2>Mi az etikus tesztelés?</h2>
+    <p>Az etikus hacking azt jelenti, hogy <strong>saját engedélyeddel</strong> teszteled egy rendszer biztonságát. Célja a gyengeségek megtalálása, mielőtt egy rosszindulatú támadó megtenné.</p>
+    <div class="doc-rule">Csak olyan rendszert tesztelj, amelyhez írásban megkaptad az engedélyt, vagy a saját tulajdonod!</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Jogi háttér (Magyarország)</h2>
+    <p>Magyarországon a Btk. 375-376. §-a szabályozza az informatikai bűncselekményeket. Más hálózatán való engedély nélküli tesztelés büntetőjogi következményekkel jár.</p>
+    <div class="doc-rule safe">Biztonságos gyakorlás: otthoni labor (Raspberry Pi, VM-ek) vagy CTF platform!</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WiFi biztonsági szintek</h2>
+    <ul>
+      <li><span class="badge-danger">WEP</span> – Elavult RC4 alapú, percek alatt törhető</li>
+      <li><span class="badge-warn">WPA</span> – Már elavult, sebezhető</li>
+      <li><span class="badge-ok">WPA2</span> – AES alapú, erős jelszóval biztonságos</li>
+      <li><span class="badge-ok">WPA3</span> – SAE protokoll, legjobb védelem</li>
+    </ul>
+    <p>A <code>wifite</code> ezek gyengeségeit teszteli automatikusan.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Fontosabb portok</h2>
+    <ul>
+      <li><code>22</code>   – SSH (biztonságos távelérés)</li>
+      <li><code>80</code>   – HTTP (titkosítatlan web)</li>
+      <li><code>443</code>  – HTTPS (titkosított web)</li>
+      <li><code>445</code>  – SMB (Windows megosztás ⚠️)</li>
+      <li><code>3389</code> – RDP (Windows távoli asztal ⚠️)</li>
+    </ul>
+    <p>Az <code>nmap</code> megmutatja, melyik nyitott nálad.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Következő lépések</h2>
+    <ul>
+      <li>TryHackMe – interaktív oktatás kezdőknek</li>
+      <li>Hack The Box – haladó kihívások, iparági standard</li>
+      <li>OWASP – webes biztonsági alap</li>
+      <li>Kali Linux – pentest disztribúció</li>
+      <li>CEH / OSCP – elismert tanúsítványok</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Telepítés</h2>
+    <div class="code-block">
+      <div class="code-label">Ubuntu/Debian/Kali</div>
+      <code>sudo apt update && sudo apt install wifite nmap<br>sudo npm start</code>
+    </div>
+    <div class="code-block">
+      <div class="code-label">macOS (Homebrew)</div>
+      <code>brew install nmap<br>sudo npm start   # wifite macOS-en nem elérhető</code>
+    </div>
+  </div>
+
+</article>

@@ -1,0 +1,68 @@
+<article class="doc-page">
+  <h1>Nmap Deep Dive</h1>
+
+  <div class="doc-section">
+    <h2>Host Discovery (-sn)</h2>
+    <p>Nmap doesn't just send a simple ping. On a local network it uses ARP requests — unavoidable because the OS needs the MAC address to communicate. On remote networks it tries four probes simultaneously:</p>
+    <ul>
+      <li>ICMP Echo Request (traditional ping)</li>
+      <li>TCP SYN to port 443</li>
+      <li>TCP ACK to port 80</li>
+      <li>ICMP Timestamp Request</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>TCP SYN Scan (-sS) – Stealth mode</h2>
+    <p>The most common technique. Sends the SYN flag:</p>
+    <ul>
+      <li><code>SYN/ACK</code> returned → port <span class="badge-ok">OPEN</span></li>
+      <li><code>RST/ACK</code> returned → port <span class="badge-danger">CLOSED</span></li>
+    </ul>
+    <p>Nmap immediately sends back RST — the full connection is never established. Many older loggers therefore don't detect it.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>UDP Scan (-sU)</h2>
+    <p>The UDP protocol is stateless. When a packet is sent:</p>
+    <ul>
+      <li>Port CLOSED → <code>ICMP Port Unreachable</code> (Type 3, Code 3)</li>
+      <li>Port OPEN → often no response → <span class="badge-warn">open|filtered</span></li>
+    </ul>
+    <div class="doc-rule">UDP scan is extremely slow because routers limit ICMP response rates (Rate Limiting).</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>NSE – Nmap Scripting Engine</h2>
+    <p>Scripts written in Lua. Major categories:</p>
+    <ul>
+      <li><strong>vuln</strong>      – CVE detection (e.g. EternalBlue: <code>smb-vuln-ms17-010</code>)</li>
+      <li><strong>brute</strong>     – password guessing (FTP, SSH, HTTP-form)</li>
+      <li><strong>discovery</strong> – DNS zone transfer, SNMP content</li>
+      <li><strong>auth</strong>      – searching for default credentials</li>
+      <li><strong>malware</strong>   – searching for backdoor traces</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Timing Templates (-T0 – -T5)</h2>
+    <ul>
+      <li><code>-T0</code> Paranoid  – minutes per line, puts IDS to sleep</li>
+      <li><code>-T1</code> Sneaky    – extremely slow</li>
+      <li><code>-T3</code> Normal    – default</li>
+      <li><code>-T4</code> Aggressive – fast, recommended for CTF</li>
+      <li><code>-T5</code> Insane    – fastest, less accurate</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Firewall and IDS evasion</h2>
+    <ul>
+      <li><code>-f</code>            – Fragmentation: TCP header split into tiny packets</li>
+      <li><code>-D decoy1,decoy2</code> – Decoys: mix of fake source IPs</li>
+      <li><code>-sI zombie_ip</code> – Idle Scan: via the IP of a zombie machine</li>
+    </ul>
+    <div class="doc-rule">These should only be used on authorized engagements!</div>
+  </div>
+
+</article>

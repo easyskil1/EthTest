@@ -1,0 +1,62 @@
+<article class="doc-page">
+  <h1>Getting Started</h1>
+
+  <div class="doc-section">
+    <h2>What is ethical testing?</h2>
+    <p>Ethical hacking means testing a system's security <strong>with proper authorization</strong>. The goal is to find weaknesses before a malicious attacker does.</p>
+    <div class="doc-rule">Only test systems you own or have <em>written</em> permission to test!</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Legal background</h2>
+    <p>Unauthorized testing of other networks is a <strong>criminal offense</strong> in most countries. The difference between an ethical hacker and a cybercriminal lies in legal authorization — the same port scan is legal with a contract, and a crime without one.</p>
+    <div class="doc-rule safe">Safe practice: home lab (Raspberry Pi, VMs) or a CTF platform!</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WiFi security levels</h2>
+    <ul>
+      <li><span class="badge-danger">WEP</span> – RC4-based, broken in minutes. Don't use!</li>
+      <li><span class="badge-warn">WPA</span> – Outdated, vulnerable</li>
+      <li><span class="badge-ok">WPA2</span> – AES-based, secure with a strong password</li>
+      <li><span class="badge-ok">WPA3</span> – SAE protocol, best current protection</li>
+    </ul>
+    <p><code>wifite</code> automatically tests these weaknesses.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Important ports</h2>
+    <ul>
+      <li><code>22</code>   – SSH (secure remote access)</li>
+      <li><code>80</code>   – HTTP (unencrypted web)</li>
+      <li><code>443</code>  – HTTPS (encrypted web)</li>
+      <li><code>445</code>  – SMB (Windows sharing ⚠️)</li>
+      <li><code>3389</code> – RDP (Windows Remote Desktop ⚠️)</li>
+    </ul>
+    <p><code>nmap</code> shows which ports are open on your network.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Next steps</h2>
+    <ul>
+      <li>TryHackMe – interactive learning for beginners</li>
+      <li>Hack The Box – advanced challenges, industry standard</li>
+      <li>OWASP – web security fundamentals</li>
+      <li>Kali Linux – pentest distribution</li>
+      <li>CEH / OSCP – recognized certifications</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Installation</h2>
+    <div class="code-block">
+      <div class="code-label">Ubuntu/Debian/Kali</div>
+      <code>sudo apt update && sudo apt install wifite nmap<br>sudo npm start</code>
+    </div>
+    <div class="code-block">
+      <div class="code-label">macOS (Homebrew)</div>
+      <code>brew install nmap<br>sudo npm start   # wifite not available on macOS</code>
+    </div>
+  </div>
+
+</article>

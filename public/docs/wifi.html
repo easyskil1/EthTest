@@ -1,0 +1,51 @@
+<article class="doc-page">
+  <h1>wireless-audit.txt</h1>
+
+  <div class="doc-section">
+    <h2>Biztonsági protokollok</h2>
+    <ul>
+      <li><span class="badge-danger">WEP</span>  – RC4 alapú, percek alatt törhető. Ne használd!</li>
+      <li><span class="badge-warn">WPA</span>    – TKIP titkosítás, elavult és sebezhető</li>
+      <li><span class="badge-ok">WPA2</span>     – AES-CCMP alapú, erős jelszóval biztonságos</li>
+      <li><span class="badge-ok">WPA3</span>     – SAE protokoll, legjobb jelenlegi védelem</li>
+    </ul>
+    <div class="doc-rule">Teszteléshez monitor módú WiFi adapter szükséges (macOS-en nem elérhető).</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WPA2 – 4-Way Handshake</h2>
+    <p>A jelszó soha nem megy át a levegőn – csak egy matematikai lenyomat (MIC). Ha elkapjuk a 4 EAPOL csomagot, <strong>offline brute-force-szal</strong> próbálhatjuk kitalálni a jelszót. A router ekkor már nem tudja blokkolni a próbálkozásokat.</p>
+    <ul>
+      <li>M1: Router → ANonce (véletlen szám)</li>
+      <li>M2: Kliens → SNonce + MIC (jelszóból számított)</li>
+      <li>M3-M4: kölcsönös megerősítés</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>PMKID Attack – Clientless</h2>
+    <p>2018-ban felfedezett módszer: <strong>kliens nélkül</strong> is megkaphatjuk a jelszó hash-ét. Egyetlen Association Request csomaggal a router visszaad egy PMKID-t, ami tartalmazza a jelszó hashét – nincs szükség a handshake elkapására.</p>
+    <div class="doc-rule safe">Ez a legmodernebb WiFi audittechnika – a <code>wifite</code> automatikusan próbálja.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WPS és Pixie-Dust sebezhetőség</h2>
+    <p>A WPS 8 jegyű PIN-je valójában két részből áll – az első 4 jegy önállóan ellenőrizhető. Ez drasztikusan csökkenti a brute-force időt (11000 próbából 11 millió helyett).</p>
+    <p>A <strong>Pixie-Dust</strong> támadás bizonyos chipeken (Ralink, Realtek) egyetlen csomagváltásból kitalálja a PIN-t – mert hibásan generálnak véletlen számokat.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Deauthentication támadás</h2>
+    <p>A 802.11 management frame-ek (Beacon, Deauth) <strong>titkosítatlanok</strong>. A támadó a router nevében küldhet „lecsatlakozás" parancsot a kliensnek, aki azonnal újracsatlakozik – ekkor kapható el a 4-way handshake.</p>
+    <div class="doc-rule">A <code>wifite</code> ezt automatikusan elvégzi tesztelés során.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Eszközök telepítése</h2>
+    <div class="code-block">
+      <div class="code-label">Linux</div>
+      <code>sudo apt install wifite aircrack-ng hcxdumptool hcxtools</code>
+    </div>
+  </div>
+
+</article>

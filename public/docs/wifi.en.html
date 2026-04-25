@@ -1,0 +1,51 @@
+<article class="doc-page">
+  <h1>Wireless Security</h1>
+
+  <div class="doc-section">
+    <h2>Security protocols</h2>
+    <ul>
+      <li><span class="badge-danger">WEP</span>  – RC4-based, broken in minutes. Don't use!</li>
+      <li><span class="badge-warn">WPA</span>    – TKIP encryption, outdated and vulnerable</li>
+      <li><span class="badge-ok">WPA2</span>     – AES-CCMP based, secure with a strong password</li>
+      <li><span class="badge-ok">WPA3</span>     – SAE protocol, best current protection</li>
+    </ul>
+    <div class="doc-rule">Testing requires a monitor-mode WiFi adapter (not available on macOS).</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WPA2 – 4-Way Handshake</h2>
+    <p>The password never travels over the air — only a mathematical digest (MIC). If we capture the 4 EAPOL packets, we can try to guess the password with <strong>offline brute-force</strong>. The router can no longer block the attempts.</p>
+    <ul>
+      <li>M1: Router → ANonce (random number)</li>
+      <li>M2: Client → SNonce + MIC (computed from password)</li>
+      <li>M3-M4: mutual confirmation</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>PMKID Attack – Clientless</h2>
+    <p>A method discovered in 2018: we can obtain the password hash <strong>without any clients present</strong>. With a single Association Request packet, the router returns a PMKID containing the password hash — no handshake capture needed.</p>
+    <div class="doc-rule safe">This is the most modern WiFi audit technique — <code>wifite</code> tries it automatically.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>WPS and Pixie-Dust vulnerability</h2>
+    <p>The 8-digit WPS PIN is actually split into two parts — the first 4 digits can be verified independently. This drastically reduces brute-force time (11,000 attempts instead of 11 million).</p>
+    <p>The <strong>Pixie-Dust</strong> attack on certain chips (Ralink, Realtek) figures out the PIN from a single packet exchange — because they generate random numbers incorrectly.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Deauthentication attack</h2>
+    <p>The 802.11 management frames (Beacon, Deauth) are <strong>unencrypted</strong>. An attacker can send a "disconnect" command on behalf of the router to the client, who immediately reconnects — this is when the 4-way handshake can be captured.</p>
+    <div class="doc-rule"><code>wifite</code> performs this automatically during testing.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Tool installation</h2>
+    <div class="code-block">
+      <div class="code-label">Linux</div>
+      <code>sudo apt install wifite aircrack-ng hcxdumptool hcxtools</code>
+    </div>
+  </div>
+
+</article>

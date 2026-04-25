@@ -1,0 +1,52 @@
+<article class="doc-page">
+  <h1>methodology.txt</h1>
+
+  <div class="doc-section">
+    <h2>Pre-engagement – Előkészítés</h2>
+    <p>A teszt „játékszabályainak" lefektetése. Meghatározásra kerül a teszt célja, a hatókör (mely IP-k érinthetők), az engedélyezett technikák, az időkeret és a kommunikációs csatorna incidens esetére.</p>
+    <div class="doc-rule">Ez a szakasz védi mind a megrendelőt, mind a tesztelőt jogilag.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Intelligence Gathering – OSINT</h2>
+    <p>Passzív adatgyűjtés – nem lépünk közvetlen kapcsolatba a célrendszerrel:</p>
+    <ul>
+      <li>publikus adatbázisok, közösségi média</li>
+      <li>domain információk (WHOIS, DNS MX/TXT)</li>
+      <li>kiszivárgott jelszó-adatbázisok</li>
+    </ul>
+    <p>Ez a lépés meglepően sok kritikus információt tárhat fel.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Threat Modeling – Fenyegetésmodellezés</h2>
+    <p>Stratégiaalkotás a begyűjtött adatok alapján. Kérdések: hol vannak az értékes adatok, mely rendszerek kritikusak az üzlethez, milyen támadási felületek érhetők el kívülről?</p>
+    <p>A cél: ne véletlenszerűen próbálkozzunk, hanem <strong>célzott útvonalakat</strong> építsünk fel.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Vulnerability Analysis</h2>
+    <p>Automatizált vizsgálat: ismert CVE-k, hibás konfigurációk, elavult szoftverek keresése.</p>
+    <p>Manuális elemzés (értékesebb): logikai hibák, üzleti folyamatok gyengeségei, egyedi exploit lehetőségek.</p>
+    <div class="doc-rule">Az automatizált eszközök gyorsak, de sokszor hamis pozitív találatokat adnak. A manuális ellenőrzés ezt pontosítja.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Exploitation – Kihasználás</h2>
+    <p>Ténylegesen kihasználjuk a talált sebezhetőségeket. Tipikus technikák:</p>
+    <ul>
+      <li>jelszófeltörés (brute-force, dictionary)</li>
+      <li>SQL injection</li>
+      <li>XSS (Cross-Site Scripting)</li>
+      <li>szolgáltatások kihasználása</li>
+    </ul>
+    <div class="doc-rule">Cél a bizonyítás, nem a rombolás – csak annyira megyünk el, amennyi szükséges.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Post-Exploitation és Riportálás</h2>
+    <p>A teszt üzleti hatásának megmutatása: jogosultság-növelés (Privilege Escalation), lateral movement, érzékeny adatok felkutatása.</p>
+    <p>A riport tartalmazza a sebezhetőségek listáját kockázati besorolással (kritikus/magas/közepes/alacsony), bizonyítékokkal és konkrét javítási javaslatokkal.</p>
+  </div>
+
+</article>

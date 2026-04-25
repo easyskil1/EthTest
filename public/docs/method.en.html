@@ -1,0 +1,52 @@
+<article class="doc-page">
+  <h1>Pentest Methodology</h1>
+
+  <div class="doc-section">
+    <h2>Pre-engagement – Preparation</h2>
+    <p>Establishing the "rules of the game". The test objective, scope (which IPs are in range), permitted techniques, timeframe, and communication channel for incidents are defined.</p>
+    <div class="doc-rule">This phase legally protects both the client and the tester.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Intelligence Gathering – OSINT</h2>
+    <p>Passive data collection — no direct contact with the target system:</p>
+    <ul>
+      <li>Public databases, social media</li>
+      <li>Domain information (WHOIS, DNS MX/TXT)</li>
+      <li>Leaked password databases</li>
+    </ul>
+    <p>This step can reveal a surprisingly large amount of critical information.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Threat Modeling</h2>
+    <p>Building strategy from collected data. Questions: where is valuable data stored, which systems are critical to the business, what attack surfaces are accessible from the outside?</p>
+    <p>The goal: don't try randomly, build <strong>targeted attack paths</strong>.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>Vulnerability Analysis</h2>
+    <p>Automated scanning: searching for known CVEs, misconfigurations, and outdated software.</p>
+    <p>Manual analysis (more valuable): logical flaws, business process weaknesses, unique exploit opportunities.</p>
+    <div class="doc-rule">Automated tools are fast but often produce false positives. Manual review refines this.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Exploitation</h2>
+    <p>Actually exploiting discovered vulnerabilities. Typical techniques:</p>
+    <ul>
+      <li>Password cracking (brute-force, dictionary)</li>
+      <li>SQL injection</li>
+      <li>XSS (Cross-Site Scripting)</li>
+      <li>Service exploitation</li>
+    </ul>
+    <div class="doc-rule">Goal is proof, not destruction — only go as far as necessary.</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>Post-Exploitation and Reporting</h2>
+    <p>Demonstrating the business impact of the test: privilege escalation, lateral movement, searching for sensitive data.</p>
+    <p>The report contains a list of vulnerabilities with risk classification (critical/high/medium/low), evidence, and concrete remediation recommendations.</p>
+  </div>
+
+</article>

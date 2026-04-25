@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EthTest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme/style.css">
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="scan-line"></div>
+
+  <header class="header">
+    <div class="logo">
+      <pre class="logo-ascii">
+<span class="logo-text">╔═╗╔╦╗╦ ╦</span><span class="logo-accent">╔╦╗╔═╗╔═╗╔╦╗</span>
+<span class="logo-text">║╣  ║ ╠═╣</span><span class="logo-accent"> ║ ║╣ ╚═╗ ║ </span>
+<span class="logo-text">╚═╝ ╩ ╩ ╩</span><span class="logo-accent"> ╩ ╚═╝╚═╝ ╩ </span></pre>
+    </div>
+    <div class="header-meta">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText" data-i18n="status.idle">Készenléti állapot</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-tab="home" data-i18n="nav.home">🏠 Főoldal</button>
+      <button class="nav-btn" data-tab="wifite" data-i18n="nav.wifi">WiFi Audit</button>
+      <button class="nav-btn" data-tab="nmap" data-i18n="nav.nmap">Nmap Scan</button>
+    </nav>
+    <select id="langSelect" class="lang-select">
+      <option value="hu">🇭🇺 Magyar</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="de">🇩🇪 Deutsch</option>
+      <option value="es">🇪🇸 Español</option>
+    </select>
+  </header>
+
+  <main class="main">
+
+    <!-- ── HOME TAB (Wiki Style) ── -->
+    <section class="tab active" id="tab-home">
+      <div class="wiki-container">
+        <aside class="wiki-sidebar">
+          <div class="wiki-nav-title" data-i18n="nav.home">📚 Tudásbázis</div>
+          <nav class="wiki-nav">
+            <a href="#guide" class="wiki-nav-link active" data-i18n="home.nav.guide"></a>
+            <a href="#legal" class="wiki-nav-link" data-i18n="home.nav.legal"></a>
+            <a href="#method" class="wiki-nav-link" data-i18n="home.nav.method"></a>
+            <a href="#nmap" class="wiki-nav-link" data-i18n="home.nav.nmap"></a>
+            <a href="#wifi" class="wiki-nav-link" data-i18n="home.nav.wifi"></a>
+            <a href="#platforms" class="wiki-nav-link" data-i18n="home.nav.platforms"></a>
+          </nav>
+        </aside>
+        
+        <div class="wiki-content">
+          <!-- Dinamikusan betöltött tartalom helye -->
+          <div class="doc-loader">Dokumentáció betöltése...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WIFITE TAB ── -->
+    <section class="tab" id="tab-wifite">
+      <div class="panel-grid">
+        <aside class="side-panel">
+          <h2 class="panel-title" data-i18n="wifite.title">⚡ Wifite Konfiguráció</h2>
+
+          <div class="info-box" data-i18n-html="wifite.info">
+            <strong>Mi ez?</strong><br>
+            A <code>wifite</code> egy automatizált WiFi biztonsági tesztelő eszköz.
+            <br><br>
+            <strong>⚠️ Fontos:</strong> Csak saját hálózaton használd!
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="wifite.label.mode">Szkennelési mód</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" name="wifiteMode" value="wpa" checked>
+                <span class="radio-custom"></span>
+                <div>
+                  <strong data-i18n="wifite.wpa.title">WPA/WPA2</strong>
+                  <small data-i18n="wifite.wpa.desc">Modern titkosítás tesztelése</small>
+                </div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="wifiteMode" value="wps">
+                <span class="radio-custom"></span>
+                <div>
+                  <strong data-i18n="wifite.wps.title">WPS</strong>
+                  <small data-i18n="wifite.wps.desc">WPS gomb sebezhetőség</small>
+                </div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="wifiteMode" value="all">
+                <span class="radio-custom"></span>
+                <div>
+                  <strong data-i18n="wifite.all.title">Teljes szkennelés</strong>
+                  <small data-i18n="wifite.all.desc">Minden módszer</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="wifite.label.extra">Extra opciók</label>
+            <label class="checkbox-option">
+              <input type="checkbox" id="optKill" checked>
+              <span class="check-custom"></span>
+              <div>
+                <strong>--kill</strong>
+                <small data-i18n="wifite.kill.desc">Interferáló folyamatok leállítása</small>
+              </div>
+            </label>
+            <label class="checkbox-option">
+              <input type="checkbox" id="optRandomMac">
+              <span class="check-custom"></span>
+              <div>
+                <strong>--random-mac</strong>
+                <small data-i18n="wifite.mac.desc">Véletlenszerű MAC cím használata</small>
+              </div>
+            </label>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-primary" id="wifiteStart">
+              <span class="btn-icon">▶</span> <span data-i18n="wifite.btn.start">Indítás</span>
+            </button>
+            <button class="btn btn-danger" id="wifiteStop" disabled>
+              <span class="btn-icon">■</span> <span data-i18n="wifite.btn.stop">Leállítás</span>
+            </button>
+          </div>
+
+          <div class="req-box">
+            <div class="req-title" data-i18n="wifite.req.title">Rendszerkövetelmények</div>
+            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.linux">Linux (Kali / Parrot / Ubuntu) – teljes támogatás</span></div>
+            <div class="req-item"><span class="req-warn">●</span> <span data-i18n="wifite.req.macos">macOS – wifite nem elérhető, nmap igen</span></div>
+            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.monitor">Monitor módot támogató WiFi kártya</span></div>
+            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.root">Root jogosultság</span> (<code>sudo npm start</code>)</div>
+          </div>
+        </aside>
+
+        <div class="output-panel">
+          <div class="output-header">
+            <span class="output-title" data-i18n="out.wifite.title">Terminal kimenet</span>
+            <div class="output-controls">
+              <span id="wifiteLineCount" class="line-count">0 <span data-i18n="out.lines">sor</span></span>
+              <button class="ctrl-btn" id="wifiteClear" data-i18n="out.clear">Törlés</button>
+              <button class="ctrl-btn" id="wifiteExport" data-i18n="out.export">Exportálás</button>
+            </div>
+          </div>
+          <div class="terminal" id="wifiteOutput">
+            <div class="terminal-welcome">
+              <pre class="ascii-art">
+  ╦ ╦╦╔═╗╦╔╦╗╔═╗
+  ║║║║╠╣ ║ ║ ║╣
+  ╚╩╝╩╚  ╩ ╩ ╚═╝  v1.0</pre>
+              <p class="welcome-text" data-i18n="welcome.wifite.text">Etikus WiFi tesztelő környezet kezdőknek.</p>
+              <p class="welcome-hint"><span data-i18n="welcome.wifite.hint">Konfiguráld a beállításokat, majd nyomj</span> <kbd data-i18n="welcome.btn">Indítás</kbd>-t.</p>
+            </div>
+          </div>
+          <div class="summary-bar" id="wifiteSummary" style="display:none">
+            <div class="summary-item" id="sumNetworks">
+              <span class="sum-value">0</span>
+              <span class="sum-label" data-i18n="sum.networks">Hálózat</span>
+            </div>
+            <div class="summary-item" id="sumHandshakes">
+              <span class="sum-value">0</span>
+              <span class="sum-label" data-i18n="sum.handshakes">Handshake</span>
+            </div>
+            <div class="summary-item" id="sumCracked">
+              <span class="sum-value">0</span>
+              <span class="sum-label" data-i18n="sum.cracked">Feltörve</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── NMAP TAB ── -->
+    <section class="tab" id="tab-nmap">
+      <div class="panel-grid">
+        <aside class="side-panel">
+          <div class="side-panel-sticky">
+            <h2 class="panel-title" data-i18n="nmap.title">🔍 Nmap Szkennelés</h2>
+
+            <div class="form-group">
+              <label class="form-label" data-i18n="nmap.label.target">Cél IP cím / tartomány</label>
+              <input type="text" class="form-input" id="nmapTarget"
+                data-i18n-ph="nmap.target.ph"
+                placeholder="pl. 192.168.1.1 vagy 192.168.1.0/24">
+              <small class="form-hint" data-i18n="nmap.target.hint">Csak saját hálózatod! A /24 az egész alhálózatot jelenti.</small>
+            </div>
+
+            <div class="form-group" style="margin-top:0.6rem">
+              <label class="form-label" data-i18n="nmap.label.gen_cmd">Generált parancs <span class="form-label-opt" data-i18n="nmap.label.live_prev">(élő előnézet)</span></label>
+              <div class="cmd-preview-wrap" id="cmdPreviewWrap">
+                <span class="cmd-preview-prompt">$</span>
+                <span class="cmd-preview-text" id="cmdPreviewText">nmap -sn &lt;cél&gt;</span>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:0.75rem">
+              <label class="form-label" data-i18n="nmap.label.custom_cmd">Egyéni parancs <span class="form-label-opt" data-i18n="nmap.label.optional">(opcionális)</span></label>
+              <div class="cmd-input-wrap">
+                <span class="cmd-prompt">$</span>
+                <input type="text" class="cmd-input" id="nmapCustomCmd"
+                  data-i18n-ph="nmap.custom_cmd.ph"
+                  placeholder="nmap -sV -p 22,80,443 192.168.1.1"
+                  spellcheck="false" autocomplete="off">
+              </div>
+              <small class="form-hint" data-i18n="nmap.custom_cmd.hint">Ha ki van töltve, felülírja a fenti cél- és típusbeállításokat.</small>
+            </div>
+
+            <div class="sudo-toggle-row">
+              <div class="sudo-toggle-info">
+                <label class="sudo-toggle-label" for="nmapSudo">
+                  <span class="sudo-icon">🔑</span>
+                  <span data-i18n="nmap.label.sudo">Sudo mód</span>
+                  <small class="form-label-opt" data-i18n="nmap.label.root_priv">(root jog)</small>
+                </label>
+                <span class="sudo-hint" data-i18n="nmap.sudo.hint">Linux: OS/SYN/UDP scanhez · macOS: <code>sudo npm start</code> helyett</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="nmapSudo">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="btn-group" style="margin-top:0.6rem">
+              <button class="btn btn-primary" id="nmapStart">
+                <span class="btn-icon">▶</span> <span data-i18n="nmap.btn.start">Indítás</span>
+              </button>
+              <button class="btn btn-danger" id="nmapStop" disabled>
+                <span class="btn-icon">■</span> <span data-i18n="nmap.btn.stop">Leállítás</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🏓 Felderítés -->
+          <div class="form-group" style="margin-top: 0.9rem;">
+            <label class="form-label" data-i18n="nmap.label.discovery">🏓 Felderítés</label>
+            <div class="scan-types">
+              <button class="scan-type-btn active" data-type="ping">
+                <span class="st-icon">🏓</span>
+                <strong data-i18n="nmap.ping.title">Ping Scan</strong>
+                <small data-i18n="nmap.ping.desc">Ki van online?</small>
+              </button>
+              <button class="scan-type-btn" data-type="os">
+                <span class="st-icon">💻</span>
+                <strong data-i18n="nmap.os.title">OS Detection</strong>
+                <small data-i18n="nmap.os.desc">Op. rendszer</small>
+              </button>
+              <button class="scan-type-btn" data-type="mac">
+                <span class="st-icon">🔖</span>
+                <strong data-i18n="nmap.mac.title">MAC + Gyártó</strong>
+                <small data-i18n="nmap.mac.desc">ARP, LAN-only</small>
+              </button>
+              <button class="scan-type-btn" data-type="nbstat">
+                <span class="st-icon">🖥️</span>
+                <strong data-i18n="nmap.nbstat.title">NetBIOS</strong>
+                <small data-i18n="nmap.nbstat.desc">Windows nevek</small>
+              </button>
+              <button class="scan-type-btn" data-type="traceroute">
+                <span class="st-icon">🛤️</span>
+                <strong data-i18n="nmap.traceroute.title">Traceroute</strong>
+                <small data-i18n="nmap.traceroute.desc">Hálózati útvonal</small>
+              </button>
+              <button class="scan-type-btn" data-type="dnsbrute">
+                <span class="st-icon">🔤</span>
+                <strong data-i18n="nmap.dnsbrute.title">DNS Brute</strong>
+                <small data-i18n="nmap.dnsbrute.desc">Subdomének</small>
+              </button>
+              <button class="scan-type-btn" data-type="discovery">
+                <span class="st-icon">🗺️</span>
+                <strong>Discovery</strong>
+                <small data-i18n="nmap.discovery.desc">Részletes feltérk.</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🔌 Port Scan -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="nmap.label.portscan">🔌 Port Scan</label>
+            <div class="scan-types">
+              <button class="scan-type-btn" data-type="fast">
+                <span class="st-icon">⚡</span>
+                <strong data-i18n="nmap.fast.title">Gyors</strong>
+                <small data-i18n="nmap.fast.desc">Top 100 port</small>
+              </button>
+              <button class="scan-type-btn" data-type="full">
+                <span class="st-icon">🔬</span>
+                <strong data-i18n="nmap.full.title">Teljes</strong>
+                <small data-i18n="nmap.full.desc">Top 1000 + OS*</small>
+              </button>
+              <button class="scan-type-btn" data-type="udp">
+                <span class="st-icon">📡</span>
+                <strong data-i18n="nmap.udp.title">UDP Scan</strong>
+                <small data-i18n="nmap.udp.desc">DNS, DHCP, SNMP</small>
+              </button>
+              <button class="scan-type-btn" data-type="allports">
+                <span class="st-icon">🌐</span>
+                <strong data-i18n="nmap.allports.title">Összes port</strong>
+                <small data-i18n="nmap.allports.desc">65535, lassú</small>
+              </button>
+              <button class="scan-type-btn" data-type="stealth">
+                <span class="st-icon">👻</span>
+                <strong data-i18n="nmap.stealth.title">Stealth SYN</strong>
+                <small data-i18n="nmap.stealth.desc">Félkézfogásos</small>
+              </button>
+              <button class="scan-type-btn" data-type="ack">
+                <span class="st-icon">🧱</span>
+                <strong data-i18n="nmap.ack.title">ACK Scan</strong>
+                <small data-i18n="nmap.ack.desc">Tűzfal feltérképezés</small>
+              </button>
+              <button class="scan-type-btn" data-type="fin">
+                <span class="st-icon">🏁</span>
+                <strong data-i18n="nmap.fin.title">FIN Scan</strong>
+                <small data-i18n="nmap.fin.desc">FIN evasion</small>
+              </button>
+              <button class="scan-type-btn" data-type="null">
+                <span class="st-icon">⬛</span>
+                <strong data-i18n="nmap.null.title">NULL Scan</strong>
+                <small data-i18n="nmap.null.desc">Flag nélkül</small>
+              </button>
+              <button class="scan-type-btn" data-type="xmas">
+                <span class="st-icon">🎄</span>
+                <strong data-i18n="nmap.xmas.title">Xmas Scan</strong>
+                <small data-i18n="nmap.xmas.desc">FIN+PSH+URG</small>
+              </button>
+              <button class="scan-type-btn" data-type="ipproto">
+                <span class="st-icon">🔢</span>
+                <strong data-i18n="nmap.ipproto.title">IP Proto</strong>
+                <small data-i18n="nmap.ipproto.desc">Protokoll scan</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🔬 Szolgáltatás elemzés -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="nmap.label.service">🔬 Szolgáltatás elemzés</label>
+            <div class="scan-types">
+              <button class="scan-type-btn" data-type="ports">
+                <span class="st-icon">🔌</span>
+                <strong data-i18n="nmap.ports.title">Port + Verzió</strong>
+                <small data-i18n="nmap.ports.desc">Top 100 + szoftver</small>
+              </button>
+              <button class="scan-type-btn" data-type="scripts">
+                <span class="st-icon">📜</span>
+                <strong data-i18n="nmap.scripts.title">NSE Alap</strong>
+                <small data-i18n="nmap.scripts.desc">Default scriptek</small>
+              </button>
+              <button class="scan-type-btn" data-type="banner">
+                <span class="st-icon">🏷️</span>
+                <strong data-i18n="nmap.banner.title">Banner Grab</strong>
+                <small data-i18n="nmap.banner.desc">Szoftver fejléc</small>
+              </button>
+              <button class="scan-type-btn" data-type="auth">
+                <span class="st-icon">🔑</span>
+                <strong>Auth</strong>
+                <small data-i18n="nmap.auth.desc">Gyenge hitelesítés</small>
+              </button>
+              <button class="scan-type-btn" data-type="httpenum">
+                <span class="st-icon">📂</span>
+                <strong data-i18n="nmap.httpenum.title">HTTP Enum</strong>
+                <small data-i18n="nmap.httpenum.desc">Web könyvtárak</small>
+              </button>
+              <button class="scan-type-btn" data-type="httpmethods">
+                <span class="st-icon">⚙️</span>
+                <strong data-i18n="nmap.httpmethods.title">HTTP Methods</strong>
+                <small data-i18n="nmap.httpmethods.desc">PUT, TRACE, DEL</small>
+              </button>
+              <button class="scan-type-btn" data-type="dbinfo">
+                <span class="st-icon">🗄️</span>
+                <strong data-i18n="nmap.dbinfo.title">DB Info</strong>
+                <small data-i18n="nmap.dbinfo.desc">MySQL, MSSQL</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🛡️ Sebezhetőség -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="nmap.label.vulnscan">🛡️ Sebezhetőség</label>
+            <div class="scan-types">
+              <button class="scan-type-btn" data-type="vuln">
+                <span class="st-icon">🛡️</span>
+                <strong>Vuln</strong>
+                <small data-i18n="nmap.vuln.desc">Sebezhetőségek</small>
+              </button>
+              <button class="scan-type-btn" data-type="smb">
+                <span class="st-icon">📁</span>
+                <strong data-i18n="nmap.smb.title">SMB Vuln</strong>
+                <small data-i18n="nmap.smb.desc">EternalBlue, MS17</small>
+              </button>
+              <button class="scan-type-btn" data-type="httpvuln">
+                <span class="st-icon">🌍</span>
+                <strong data-i18n="nmap.httpvuln.title">HTTP Vuln</strong>
+                <small data-i18n="nmap.httpvuln.desc">XSS, SQLi, CSRF</small>
+              </button>
+              <button class="scan-type-btn" data-type="ssl">
+                <span class="st-icon">🔒</span>
+                <strong data-i18n="nmap.ssl.title">SSL/TLS</strong>
+                <small data-i18n="nmap.ssl.desc">Heartbleed, POODLE</small>
+              </button>
+              <button class="scan-type-btn" data-type="shellshock">
+                <span class="st-icon">🐚</span>
+                <strong data-i18n="nmap.shellshock.title">Shellshock</strong>
+                <small data-i18n="nmap.shellshock.desc">CVE-2014-6271</small>
+              </button>
+              <button class="scan-type-btn" data-type="rdpvuln">
+                <span class="st-icon">🖥️</span>
+                <strong data-i18n="nmap.rdpvuln.title">RDP Vuln</strong>
+                <small data-i18n="nmap.rdpvuln.desc">MS12-020, port 3389</small>
+              </button>
+              <button class="scan-type-btn" data-type="dbvuln">
+                <span class="st-icon">🗄️</span>
+                <strong data-i18n="nmap.dbvuln.title">DB Vuln</strong>
+                <small data-i18n="nmap.dbvuln.desc">MySQL, MSSQL CVE</small>
+              </button>
+              <button class="scan-type-btn" data-type="malware">
+                <span class="st-icon">🦠</span>
+                <strong>Malware</strong>
+                <small data-i18n="nmap.malware.desc">Backdoor nyomok</small>
+              </button>
+              <button class="scan-type-btn" data-type="exploit">
+                <span class="st-icon">💣</span>
+                <strong>Exploit</strong>
+                <small data-i18n="nmap.exploit.desc">Aktív exploitok</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- 💥 Offenzív -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="nmap.label.offensive">💥 Offenzív / Speciális</label>
+            <div class="scan-types">
+              <button class="scan-type-btn" data-type="brute">
+                <span class="st-icon">🔨</span>
+                <strong>Brute</strong>
+                <small data-i18n="nmap.brute.desc">Jelszó törés</small>
+              </button>
+              <button class="scan-type-btn" data-type="dos">
+                <span class="st-icon">💥</span>
+                <strong>DoS</strong>
+                <small data-i18n="nmap.dos.desc">Túlterheléses seb.</small>
+              </button>
+              <button class="scan-type-btn" data-type="fuzzer">
+                <span class="st-icon">🎲</span>
+                <strong>Fuzzer</strong>
+                <small data-i18n="nmap.fuzzer.desc">Input fuzzelés</small>
+              </button>
+              <button class="scan-type-btn" data-type="decoy">
+                <span class="st-icon">🎭</span>
+                <strong data-i18n="nmap.decoy.title">Decoy</strong>
+                <small data-i18n="nmap.decoy.desc">Hamis forrás IP-k</small>
+              </button>
+              <button class="scan-type-btn" data-type="frag">
+                <span class="st-icon">🧩</span>
+                <strong data-i18n="nmap.frag.title">Fragmentálás</strong>
+                <small data-i18n="nmap.frag.desc">IP tűzfal bypass</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- 💣 Teljes Audit -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="nmap.label.audit">💣 Teljes Audit</label>
+            <div class="scan-types">
+              <button class="scan-type-btn scan-type-full" data-type="audit">
+                <span class="st-icon">💣</span>
+                <strong data-i18n="nmap.audit.title">Teljes Audit</strong>
+                <small data-i18n="nmap.audit.desc">Mindent egybe – lassú!</small>
+              </button>
+            </div>
+          </div>
+
+        </aside>
+
+        <div class="output-panel">
+          <div class="output-header">
+            <div class="output-title-group">
+              <span class="output-title" data-i18n="out.nmap.title">Szkennelés eredménye</span>
+              <span id="nmapTimer" class="scan-timer" style="display:none">⏱ 00:00</span>
+            </div>
+            <div class="output-controls">
+              <input type="text" class="terminal-filter" id="nmapFilter" data-i18n-ph="out.filter_ph" placeholder="🔍 szűrés...">
+              <span id="nmapLineCount" class="line-count">0 <span data-i18n="out.lines">sor</span></span>
+              <button class="ctrl-btn" id="nmapClear" data-i18n="out.clear">Törlés</button>
+              <button class="ctrl-btn" id="nmapExport" data-i18n="out.export">Exportálás</button>
+            </div>
+          </div>
+          <div class="phase-bar" id="phaseBar" style="display:none">
+            <div class="phase-step" data-phase="1"><span class="phase-dot"></span><span class="phase-label">Host Discovery</span></div>
+            <div class="phase-sep"></div>
+            <div class="phase-step" data-phase="2"><span class="phase-dot"></span><span class="phase-label">Port Scan</span></div>
+            <div class="phase-sep"></div>
+            <div class="phase-step" data-phase="3"><span class="phase-dot"></span><span class="phase-label">Szolgáltatás</span></div>
+            <div class="phase-sep"></div>
+            <div class="phase-step" data-phase="4"><span class="phase-dot"></span><span class="phase-label">NSE Scriptek</span></div>
+          </div>
+
+          <div class="terminal" id="nmapOutput">
+            <div class="terminal-welcome">
+              <pre class="ascii-art">
+  ╔╗╔╔╦╗╔═╗╔═╗
+  ║║║║║║╠═╣╠═╝
+  ╝╚╝╩ ╩╩ ╩╩</pre>
+              <p class="welcome-text" data-i18n="welcome.nmap.text">Network Mapper – hálózat feltérképező.</p>
+              <p class="welcome-hint"><span data-i18n="welcome.nmap.hint">Add meg a cél IP-t, válassz típust, majd kattints</span> <kbd data-i18n="welcome.btn">Indítás</kbd>-ra.</p>
+              <div id="nmapScanInfo" class="scan-info-panel"></div>
+            </div>
+          </div>
+          <div class="summary-bar" id="nmapSummary" style="display:none">
+            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('hosts')">
+              <span class="sum-value" id="nmapHosts">0</span>
+              <span class="sum-label" data-i18n="sum.hosts">Host online</span>
+            </div>
+            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('ports')">
+              <span class="sum-value" id="nmapPorts">0</span>
+              <span class="sum-label" data-i18n="sum.ports">Nyitott port</span>
+            </div>
+            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('ips')">
+              <span class="sum-value" id="nmapIPs">0</span>
+              <span class="sum-label" data-i18n="sum.ips">Egyedi IP</span>
+            </div>
+            <div class="summary-item summary-item-clickable" id="nmapVulnItem" onclick="openSummaryModal('vuln')">
+              <span class="sum-value sum-value-danger" id="nmapVulns">0</span>
+              <span class="sum-label">Találat 🔍</span>
+            </div>
+            <div class="summary-item summary-item-clickable" id="nmapErrorItem" onclick="openSummaryModal('error')">
+              <span class="sum-value sum-value-warn" id="nmapErrors">0</span>
+              <span class="sum-label">Script hiba ⚠️</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-panel" id="nmapRightPanel">
+          <h2 class="panel-title" id="nmapRightTitle" data-i18n="nmap.right_panel.title">📋 Port Referencia</h2>
+
+          <div id="nmapHistory" class="history-list">
+            <div class="history-empty" data-i18n="nmap.history.empty">Még nincs scan előzmény.</div>
+          </div>
+
+          <hr class="panel-divider">
+
+          <!-- Részletes nézet: summary itemek tartalma -->
+          <div id="nmapDetailPane" style="display:none">
+            <div id="nmapDetailBody" class="detail-body"></div>
+            <button class="detail-back-btn" onclick="closeDetailPane()" data-i18n="nmap.modal.back">← Vissza a port referenciához</button>
+            <hr class="panel-divider">
+          </div>
+
+          <!-- Alap: port referencia -->
+          <div id="nmapPortRef">
+            <div data-i18n-html="nmap.info" style="margin: 1rem 1.1rem; font-size: 0.8rem; color: var(--text-dim); font-family: var(--ui); line-height: 1.5;">
+              <strong>Mi ez?</strong><br>
+              Az <code>nmap</code> (Network Mapper) megvizsgálja, hogy egy hálózaton milyen gépek és nyitott portok vannak. Segít megérteni, mit "lát" egy külső szemlélő a hálózatodról.
+            </div>
+
+            <hr class="panel-divider">
+
+            <div class="req-title" data-i18n="nmap.install.title">Telepítés</div>
+            <div class="req-item"><code>sudo apt install nmap</code> (Linux)</div>
+            <div class="req-item"><code>brew install nmap</code> (macOS)</div>
+
+            <hr class="panel-divider">
+
+            <div class="req-title">Általános portok</div>
+            <div class="req-item"><code>21</code> – FTP</div>
+            <div class="req-item"><code>22</code> – SSH</div>
+            <div class="req-item"><code>23</code> – Telnet</div>
+            <div class="req-item"><code>25</code> – SMTP</div>
+            <div class="req-item"><code>53</code> – DNS</div>
+            <div class="req-item"><code>80</code> – HTTP</div>
+            <div class="req-item"><code>110</code> – POP3</div>
+            <div class="req-item"><code>143</code> – IMAP</div>
+            <div class="req-item"><code>443</code> – HTTPS</div>
+            <div class="req-item"><code>445</code> – SMB ⚠️</div>
+            <div class="req-item"><code>3306</code> – MySQL</div>
+            <div class="req-item"><code>3389</code> – RDP ⚠️</div>
+            <div class="req-item"><code>5432</code> – PostgreSQL</div>
+            <div class="req-item"><code>6379</code> – Redis</div>
+            <div class="req-item"><code>8080</code> – HTTP alt</div>
+            <div class="req-item"><code>8443</code> – HTTPS alt</div>
+
+            <hr class="panel-divider">
+
+            <div class="req-title">Hasznos flagek</div>
+            <div class="req-item"><code>-sV</code> – verziódetektálás</div>
+            <div class="req-item"><code>-O</code> – OS detektálás*</div>
+            <div class="req-item"><code>-A</code> – összes info</div>
+            <div class="req-item"><code>-p-</code> – összes port</div>
+            <div class="req-item"><code>-T4</code> – gyors timing</div>
+            <div class="req-item"><code>-v</code> – verbose kimenet</div>
+            <div class="req-item"><code>-oN file</code> – mentés fájlba</div>
+
+            <hr class="panel-divider">
+
+            <div class="req-title">Célmegadás formátumok</div>
+            <div class="req-item"><code>192.168.1.1</code></div>
+            <div class="req-item"><code>192.168.1.0/24</code></div>
+            <div class="req-item"><code>192.168.1.1-50</code></div>
+            <div class="req-item"><code>scanme.nmap.org</code></div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ── ÚTMUTATÓ TAB ── -->
+    <section class="tab" id="tab-guide">
+      <div class="guide-container">
+        <h2 class="guide-title" data-i18n="guide.title">📖 Kezdők útmutatója</h2>
+        <div class="guide-grid">
+
+          <div class="guide-card">
+            <div class="guide-icon">🛡️</div>
+            <h3 data-i18n="guide.eth.title">Mi az etikus tesztelés?</h3>
+            <p data-i18n-html="guide.eth.body">Az etikus hacking azt jelenti, hogy <strong>saját engedélyeddel</strong> teszteled egy rendszer biztonságát.</p>
+            <div class="guide-rule" data-i18n-html="guide.eth.rule"><strong>Arany szabály:</strong> Csak saját rendszert tesztelj!</div>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">⚖️</div>
+            <h3 data-i18n="guide.law.title">Jogi háttér (Magyarország)</h3>
+            <p data-i18n-html="guide.law.body">Magyarországon a Btk. 375-376. §-a szabályozza az informatikai bűncselekményeket.</p>
+            <div class="guide-rule safe" data-i18n-html="guide.law.rule"><strong>Biztonságos gyakorlás:</strong> Használj otthoni labort!</div>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">📡</div>
+            <h3 data-i18n="guide.wifi.title">WiFi biztonsági szintek</h3>
+            <ul class="guide-list">
+              <li><span class="badge-danger">WEP</span> – Elavult, percek alatt törhető. <strong>Ne használd!</strong></li>
+              <li><span class="badge-warn">WPA</span> – Már elavult, sebezhető.</li>
+              <li><span class="badge-ok">WPA2</span> – Elterjedt, erős jelszóval biztonságos.</li>
+              <li><span class="badge-ok">WPA3</span> – Legújabb, legjobb védelem.</li>
+            </ul>
+            <p>A <code>wifite</code> ezek gyengeségeit teszteli.</p>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">🔌</div>
+            <h3 data-i18n="guide.ports.title">Fontosabb portok</h3>
+            <ul class="guide-list">
+              <li><code>22</code> – SSH (biztonságos távelérés)</li>
+              <li><code>80</code> – HTTP (titkosítatlan web)</li>
+              <li><code>443</code> – HTTPS (titkosított web)</li>
+              <li><code>445</code> – SMB (Windows megosztás ⚠️)</li>
+              <li><code>3389</code> – RDP (Windows távoli asztal ⚠️)</li>
+            </ul>
+            <p>Az <code>nmap</code> megmutatja, melyik nyitott nálad.</p>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">🚀</div>
+            <h3 data-i18n="guide.next.title">Következő lépések</h3>
+            <ul class="guide-list">
+              <li>🎯 <a href="https://tryhackme.com" target="_blank">TryHackMe</a> – interaktív oktatás</li>
+              <li>🏆 <a href="https://hackthebox.com" target="_blank">Hack The Box</a> – haladó kihívások</li>
+              <li>📚 <a href="https://owasp.org" target="_blank">OWASP</a> – webes biztonsági alap</li>
+              <li>🐧 Kali Linux – pentest disztribúció</li>
+              <li>📜 CEH / OSCP – elismert tanúsítványok</li>
+            </ul>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">⚙️</div>
+            <h3 data-i18n="guide.install.title">Telepítési útmutató</h3>
+            <div class="code-block">
+              <div class="code-label">Ubuntu/Debian/Kali</div>
+              <code>sudo apt update<br>sudo apt install wifite nmap<br>sudo npm start</code>
+            </div>
+            <div class="code-block" style="margin-top:0.8rem">
+              <div class="code-label">macOS (Homebrew)</div>
+              <code>brew install nmap<br># wifite: limited on macOS<br>sudo npm start</code>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toastContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/lang/hu.js"></script>
+  <script src="/lang/en.js"></script>
+  <script src="/lang/de.js"></script>
+  <script src="/lang/es.js"></script>
+  <script src="/lang/i18n.js"></script>
+  <script src="/app/app.js"></script>
+  <script src="/app/nmap.js"></script>
+  <script src="/app/wifite.js"></script>
+</body>
+</html>

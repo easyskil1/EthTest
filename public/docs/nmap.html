@@ -1,0 +1,68 @@
+<article class="doc-page">
+  <h1>nmap-deepdive.txt</h1>
+
+  <div class="doc-section">
+    <h2>Host Discovery (-sn)</h2>
+    <p>Az Nmap nem csak egyszerű pinget küld. Helyi hálózaton ARP requesteket használ – ez kikerülhetetlen, mert az OS-nek szüksége van a MAC-re a kommunikációhoz. Távoli hálózaton négy próbát tesz egyszerre:</p>
+    <ul>
+      <li>ICMP Echo Request (hagyományos ping)</li>
+      <li>TCP SYN a 443-as portra</li>
+      <li>TCP ACK a 80-as portra</li>
+      <li>ICMP Timestamp Request</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>TCP SYN Scan (-sS) – Stealth mód</h2>
+    <p>A legelterjedtebb technika. Elküldi a SYN flag-et:</p>
+    <ul>
+      <li><code>SYN/ACK</code> visszajön → port <span class="badge-ok">OPEN</span></li>
+      <li><code>RST/ACK</code> visszajön → port <span class="badge-danger">CLOSED</span></li>
+    </ul>
+    <p>Az Nmap azonnal RST-t küld vissza – a teljes kapcsolat sosem épül fel. Sok régi naplózó ezért nem észleli.</p>
+  </div>
+
+  <div class="doc-section">
+    <h2>UDP Scan (-sU)</h2>
+    <p>Az UDP protokollnak nincs állapota. Ha csomagot küldünk:</p>
+    <ul>
+      <li>Port ZÁRVA → <code>ICMP Port Unreachable</code> (Type 3, Code 3)</li>
+      <li>Port NYITVA → sokszor semmi válasz → <span class="badge-warn">open|filtered</span></li>
+    </ul>
+    <div class="doc-rule">UDP scan rendkívül lassú, mert a routerek korlátozzák az ICMP válaszok sebességét (Rate Limiting).</div>
+  </div>
+
+  <div class="doc-section">
+    <h2>NSE – Nmap Scripting Engine</h2>
+    <p>Lua nyelven írt scriptek. Fontosabb kategóriák:</p>
+    <ul>
+      <li><strong>vuln</strong>      – CVE-k keresése (pl. EternalBlue: <code>smb-vuln-ms17-010</code>)</li>
+      <li><strong>brute</strong>     – jelszópróbálgatás (FTP, SSH, HTTP-form)</li>
+      <li><strong>discovery</strong> – DNS zónatranszfer, SNMP tartalom</li>
+      <li><strong>auth</strong>      – alapértelmezett hitelesítő adatok keresése</li>
+      <li><strong>malware</strong>   – backdoor nyomok keresése</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Timing Templates (-T0 – -T5)</h2>
+    <ul>
+      <li><code>-T0</code> Paranoid  – percek soronként, IDS-t altat</li>
+      <li><code>-T1</code> Sneaky    – rendkívül lassú</li>
+      <li><code>-T3</code> Normal    – alapértelmezett</li>
+      <li><code>-T4</code> Aggressive – gyors, CTF-re ajánlott</li>
+      <li><code>-T5</code> Insane    – leggyorsabb, pontatlanabb</li>
+    </ul>
+  </div>
+
+  <div class="doc-section">
+    <h2>Tűzfal és IDS kikerülés</h2>
+    <ul>
+      <li><code>-f</code>            – Fragmentation: TCP fejléc apró csomagokra bontva</li>
+      <li><code>-D decoy1,decoy2</code> – Decoys: hamis forrás IP-k keveréke</li>
+      <li><code>-sI zombie_ip</code> – Idle Scan: zombi gép IP-jén keresztül</li>
+    </ul>
+    <div class="doc-rule">Ezeket csak felhatalmazott tesztelésen szabad alkalmazni!</div>
+  </div>
+
+</article>
