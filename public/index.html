@@ -1,700 +1,517 @@
-<!DOCTYPE html>
-<html lang="hu">
+<!doctype html>
+<html lang="hu" translate="no" class="notranslate">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EthTest</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/theme/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="google" content="notranslate">
+<title>EthTest Konzol</title>
+<style>
+/* ETHTEST KONZOL — klasszikus vállalati GUI-elrendezés a pentest-toolkitre húzva.
+   Saját téma / méret / sűrűség / görgetés (nem a böngészőé).
+   A motor a meglévő Flask backend (app.py); ez a fájl csak a felület. */
+:root{
+  --accent:#0a6ed1; --accent-2:#0854a0; --accent-weak:#d9eaf9; --on-accent:#ffffff;
+  --win:#dfe3e8; --surface:#ffffff; --surface-2:#eef1f4; --surface-3:#e3e7ec;
+  --menubar:#f4f5f7; --toolbar:#eceff3; --titlebar:#cdd6e0; --titlebar-2:#dde4ec;
+  --line:#c3cad3; --line-strong:#9aa6b3; --line-soft:#e6e9ee;
+  --fg:#1b2733; --fg-2:#49566a; --fg-3:#78859a;
+  --led-g:#2e944b; --led-r:#d0021b; --led-y:#e08900; --led-b:#0a6ed1; --led-off:#b9c1cb;
+  --pos:#1f7038; --neg:#aa0808; --crit:#9a5600; --info:#0a5cb0;
+  /* terminál (sötét, a többi témában is) */
+  --term-bg:#0f1720; --term-fg:#cfe3d8; --term-line:#1d2a38; --term-dim:#7c8ca0;
+  --mono:'Cascadia Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --ui:-apple-system,"Segoe UI",Roboto,Arial,"Helvetica Neue",sans-serif;
+  --row:25px; --rowsm:20px; --cell-px:8px; --boxtitle:25px; --label-w:140px; --gap:8px; --pad:10px; --tree-row:25px;
+  --h-menu:24px; --h-tool:32px; --h-title:26px; --h-status:22px; --tbw:26px; --tbh:24px;
+  --rail:46px; --tree-w:240px; --drawer-w:400px; --sb:10px;
+  --fs:12.5px; --fs-sm:11px; --fs-big:14px; --scale:1;
+  color-scheme:light;
+}
+:root[data-density="cozy"]{--row:32px; --rowsm:26px; --cell-px:10px; --boxtitle:30px; --tree-row:32px;
+  --h-menu:30px; --h-tool:40px; --h-title:32px; --h-status:26px; --tbw:34px; --tbh:32px; --rail:54px;}
+:root[data-theme="dark"]{
+  --accent:#4aa3ef; --accent-2:#78bbf5; --accent-weak:#13293f; --on-accent:#08131e;
+  --win:#161b22; --surface:#1b222b; --surface-2:#141a21; --surface-3:#222b35;
+  --menubar:#10151b; --toolbar:#161c23; --titlebar:#243041; --titlebar-2:#1c2733;
+  --line:#2c3642; --line-strong:#3c4856; --line-soft:#232c36;
+  --fg:#e5ebf1; --fg-2:#a9b6c3; --fg-3:#74828f;
+  --led-g:#45c06a; --led-r:#f0556a; --led-y:#e5a53a; --led-b:#4aa3ef; --led-off:#44505c;
+  --pos:#62d087; --neg:#ff8795; --crit:#f0b95a; --info:#78bbf5;
+  --term-bg:#0b1118; --term-fg:#cfe3d8; --term-line:#182230;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{margin:0;font-family:var(--ui);background:var(--win);color:var(--fg);font-size:var(--fs);line-height:1.4;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button:focus-visible,.tnode:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.mono{font-family:var(--mono)} .muted{color:var(--fg-3)}
+::-webkit-scrollbar{width:var(--sb);height:var(--sb)}
+::-webkit-scrollbar-track{background:var(--surface-2)}
+::-webkit-scrollbar-thumb{background:var(--line-strong);border:2px solid var(--surface-2)}
+::-webkit-scrollbar-thumb:hover{background:var(--fg-3)}
+:root[data-sb="hide"] ::-webkit-scrollbar{display:none}
+@supports not selector(::-webkit-scrollbar){*{scrollbar-color:var(--line-strong) var(--surface-2)} :root[data-sb="hide"] *{scrollbar-width:none}}
+body.panning,body.panning *{cursor:grabbing!important;user-select:none!important}
+body.resizing,body.resizing *{cursor:col-resize!important;user-select:none!important}
+
+/* állapotjelzők */
+.led{width:8px;height:8px;border-radius:50%;background:var(--led-off);display:inline-block;flex:0 0 auto}
+.led.g{background:var(--led-g)} .led.r{background:var(--led-r)} .led.y{background:var(--led-y)} .led.b{background:var(--led-b)}
+@keyframes ledpulse{0%,45%{opacity:1;box-shadow:0 0 0 0 var(--led-r)}60%,100%{opacity:.25;box-shadow:0 0 0 3px transparent}}
+.led.r,.led.att{animation:ledpulse var(--blink,.7s) ease-in-out infinite}
+:root[data-blink="off"] .led{animation:none}
+@media (prefers-reduced-motion:reduce){.led{animation:none!important}}
+.pos{color:var(--pos)} .neg{color:var(--neg)} .crit{color:var(--crit)} .info{color:var(--info)}
+.st{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.st.g{color:var(--pos)} .st.y{color:var(--crit)} .st.r{color:var(--neg);font-weight:600} .st.b{color:var(--info)} .st.o{color:var(--fg-3)}
+.lnk{border:0;background:none;padding:0;color:var(--accent);cursor:pointer;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+.lnk:hover{color:var(--accent-2)}
+button:disabled,.in:disabled{opacity:.5;cursor:not-allowed}
+
+.app{display:grid;grid-template-rows:var(--h-menu) var(--h-tool) var(--h-title) minmax(0,1fr) var(--h-status);overflow:hidden;
+  zoom:var(--scale);width:calc(100vw / var(--scale));height:calc(100vh / var(--scale));container-type:size;container-name:app}
+
+/* menubar */
+.menubar{display:flex;align-items:center;gap:2px;background:var(--menubar);border-bottom:1px solid var(--line);padding:0 6px;font-size:12px;position:relative;z-index:20}
+.menubar .m{height:100%;padding:0 9px;color:var(--fg-2);cursor:pointer;border:0;background:transparent;font-size:inherit}
+.menubar .m:hover,.menubar .m.open{background:var(--accent);color:var(--on-accent)}
+.menubar .brand{display:flex;align-items:center;gap:5px;padding:0 10px 0 4px;font-size:12px;color:var(--fg-2);white-space:nowrap} .menubar .brand b{color:var(--fg);font-weight:700}
+.menubar .grow{flex:1}
+.menubar .hdr-ind{display:flex;align-items:center;gap:4px;padding:0 8px;height:100%;font-size:11px;color:var(--fg-2);white-space:nowrap;border-left:1px solid var(--line)}
+.menubar .hdr-ind b{color:var(--fg);font-weight:600} .menubar .hdr-ind .led{width:8px;height:8px}
+.menubar .hdr-mon{background:color-mix(in srgb,var(--led-r) 18%,transparent)} .menubar .hdr-mon b{color:var(--neg)}
+.menubar .hdr-mon .led,.menubar .hdr-mon::before{content:"";}
+@container app (max-width:700px){.menubar .hdr-ind#hdrSsh{display:none}}
+@container app (max-width:560px){.menubar .hdr-ind b{max-width:72px;overflow:hidden;text-overflow:ellipsis}}
+.mpop{position:absolute;top:100%;min-width:220px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:2px 3px 0 rgba(0,0,0,.12);padding:2px 0;display:none}
+.mpop.show{display:block}
+.mpop button{display:flex;width:100%;align-items:center;gap:12px;height:var(--row);padding:0 12px;border:0;background:none;font-size:12px;cursor:pointer;text-align:left;white-space:nowrap}
+.mpop button:hover{background:var(--accent);color:var(--on-accent)}
+.mpop button kbd{margin-left:auto;font-family:var(--mono);font-size:10.5px;opacity:.7}
+.mpop hr{border:0;border-top:1px solid var(--line);margin:2px 0}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:3px;background:var(--toolbar);border-bottom:1px solid var(--line);padding:0 6px}
+.cmd{display:flex;align-items:center;height:calc(var(--tbh) - 2px);border:1px solid var(--line-strong);background:var(--surface);margin:0 5px 0 2px}
+.cmd .ok{width:20px;display:grid;place-items:center;color:var(--led-g);border-right:1px solid var(--line);height:100%;font-size:11px}
+.cmd input{border:0;background:transparent;height:100%;width:150px;padding:0 7px;font-family:var(--mono);font-size:11.5px;outline:none}
+.tb{width:var(--tbw);height:var(--tbh);border:1px solid transparent;background:transparent;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.tb:hover{background:var(--surface);border-color:var(--line)}
+.tb svg{width:15px;height:15px;color:var(--fg-2)}
+.tb.danger:hover{border-color:var(--neg)} .tb.danger:hover svg{color:var(--neg)}
+.sep{width:1px;height:18px;background:var(--line);margin:0 3px;flex:0 0 auto}
+.toolbar .grow{flex:1}
+.langsel{height:calc(var(--tbh) - 4px);border:1px solid var(--line-strong);background:var(--surface);font-size:11px;padding:0 4px}
+
+/* titlebar */
+.titlebar{display:flex;align-items:center;gap:8px;background:linear-gradient(var(--titlebar-2),var(--titlebar));border-bottom:1px solid var(--line-strong);padding:0 10px;min-width:0}
+.titlebar .scr{font-size:12.5px;font-weight:700;white-space:nowrap}
+.titlebar .path{font-size:11px;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titlebar .appbar{margin-left:auto;display:flex;gap:4px}
+.abtn{height:var(--rowsm);border:1px solid var(--line-strong);background:var(--surface);padding:0 9px;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.abtn:hover:not(:disabled){background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.abtn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.abtn.pri:hover:not(:disabled){background:var(--accent-2)}
+.abtn.dng{border-color:var(--neg);color:var(--neg)} .abtn.dng:hover:not(:disabled){background:var(--neg);color:#fff;border-color:var(--neg)}
+.abtn svg{width:13px;height:13px}
+
+/* body */
+.body{position:relative;display:flex;min-height:0;overflow:hidden}
+.tree{flex:0 0 var(--tree-w);background:var(--surface);border-right:1px solid var(--line);overflow:auto;min-height:0;font-size:12px}
+body.tree-off .tree{display:none}
+.tree .th{font-size:11px;font-weight:700;color:var(--fg-2);padding:0 3px 0 9px;height:var(--boxtitle);display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1}
+.tnode{display:flex;align-items:center;gap:4px;height:var(--tree-row);padding:0 8px;cursor:pointer;white-space:nowrap;color:var(--fg-2);user-select:none}
+.tnode:hover{background:var(--surface-2)}
+.tnode.sel{background:var(--accent-weak);color:var(--fg);box-shadow:inset 2px 0 0 var(--accent);font-weight:600}
+.tnode .tw{width:12px;flex:0 0 auto;color:var(--fg-3);font-size:9px;display:grid;place-items:center}
+.tnode .tglyph{width:14px;flex:0 0 auto;color:var(--accent);display:grid;place-items:center}
+.tnode .tglyph svg{width:13px;height:13px}
+.tnode.lvl1{font-weight:600;color:var(--fg)} .tnode.lvl2{padding-left:26px} .tnode.lvl2 .tglyph{color:var(--fg-3)}
+.tnode.soon{color:var(--fg-3)}
+.tnode .cnt{margin-left:auto;font-size:10px;font-variant-numeric:tabular-nums;padding:0 5px;border:1px solid var(--line);color:var(--fg-2)}
+.tnode .cnt.r{border-color:var(--neg);color:var(--neg);font-weight:700} .tnode .cnt.y{border-color:var(--crit);color:var(--crit)}
+.tnode .soonl{margin-left:auto;font-size:10px;color:var(--fg-3);border:1px solid var(--line);padding:0 5px}
+.tchildren.collapsed{display:none}
+.tsect{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-3);font-weight:700;padding:9px 9px 3px;border-top:1px solid var(--line-soft);margin-top:4px}
+
+.main{flex:1 1 0;min-width:0;overflow:auto;min-height:0;background:var(--win);padding:var(--gap);display:flex;flex-direction:column;gap:var(--gap);container-type:inline-size}
+.main>*{flex:0 0 auto}
+.cols{display:grid;gap:var(--gap)}
+.cols.c2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.cols.c12{grid-template-columns:300px minmax(0,1fr)}
+.cols.c21{grid-template-columns:minmax(0,1fr) 300px}
+.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grow1{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+@container (max-width:900px){.cols.c4{grid-template-columns:repeat(2,minmax(0,1fr))}.cols.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:640px){.cols.c2,.cols.c12,.cols.c21,.cols.c3,.cols.c4{grid-template-columns:minmax(0,1fr)}}
+
+/* group box */
+.box{border:1px solid var(--line-strong);background:var(--surface);min-width:0;display:flex;flex-direction:column}
+.box>.bt{display:flex;align-items:center;gap:7px;height:var(--boxtitle);flex:0 0 auto;padding:0 10px;font-size:11px;font-weight:700;color:var(--fg-2);
+  background:var(--surface-2);border-bottom:1px solid var(--line);letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.box>.bt .bt-r{margin-left:auto;display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-weight:400}
+.box>.bc{padding:var(--pad)} .box>.bc.flush{padding:0} .box.fill{flex:1 1 auto;min-height:0} .box.fill>.bc{flex:1;min-height:0;overflow:auto}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:0 14px;align-items:center;margin:0}
+.kv dt{color:var(--fg-2);white-space:nowrap;min-height:var(--rowsm);display:flex;align-items:center}
+.kv dd{margin:0;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.kv dd.l{text-align:left;font-weight:400}
+.kv .tot{border-top:1px solid var(--line-strong);margin-top:3px;padding-top:3px}
+
+/* form */
+.frm{display:flex;flex-direction:column}
+.fr{display:grid;grid-template-columns:var(--label-w) minmax(0,1fr);align-items:center;gap:8px;min-height:calc(var(--row) + 6px)}
+.fr>label{color:var(--fg-2)} .fr>label.req::after{content:" *";color:var(--neg)}
+.in,.btn{height:var(--row)}
+.in{width:100%;border:1px solid var(--line-strong);background:var(--surface);padding:0 7px;font-size:12px;border-radius:0}
+.in:focus{outline:1px solid var(--accent);outline-offset:-2px;border-color:var(--accent)}
+.in::placeholder{color:var(--fg-3)}
+textarea.in{height:auto;padding:6px 7px;font-family:var(--mono);resize:vertical}
+.in.err{border-color:var(--neg);box-shadow:inset 0 0 0 1px var(--neg)}
+.in.ok{border-color:var(--pos)}
+.fhint{color:var(--fg-3);font-size:var(--fs-sm);margin:2px 0 4px 0;line-height:1.5}
+.fsub{border-top:1px solid var(--line-soft);margin:6px 0 2px;padding-top:6px;color:var(--fg-2);font-size:11px;font-weight:700;text-transform:uppercase}
+.ck{display:flex;align-items:center;gap:7px;min-height:var(--rowsm)}
+.ck input{width:14px;height:14px;accent-color:var(--accent);margin:0}
+.rad{display:flex;gap:4px 16px;align-items:center;min-height:var(--row);flex-wrap:wrap}
+.rad label{display:inline-flex;gap:5px;align-items:center;cursor:pointer;white-space:nowrap}
+.rad input{width:14px;height:14px;margin:0;accent-color:var(--accent)}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.btn{border:1px solid var(--line-strong);background:var(--surface);padding:0 11px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-radius:0;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--surface-2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.pri:hover:not(:disabled){background:var(--accent-2)}
+.btn.dng{border-color:var(--neg);color:var(--neg)} .btn.dng:hover:not(:disabled){background:var(--neg);color:#fff}
+.btn.go{background:var(--led-g);border-color:var(--led-g);color:#fff;font-weight:600}
+.btn svg{width:13px;height:13px} .btn.sm{height:var(--rowsm);padding:0 8px;font-size:11px}
+.seg{display:inline-flex}
+.seg button{height:var(--row);min-width:46px;border:1px solid var(--line-strong);background:var(--surface);padding:0 9px;font-size:12px;cursor:pointer;border-radius:0;margin-left:-1px;white-space:nowrap}
+.seg button:first-child{margin-left:0} .seg button:hover{background:var(--surface-2)}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+
+/* ALV table */
+.alvwrap{overflow:auto}
+table.alv{width:100%;border-collapse:collapse;font-size:12px}
+table.alv th{background:var(--surface-2);text-align:left;font-weight:600;color:var(--fg-2);height:var(--row);padding:0 var(--cell-px);border:1px solid var(--line);border-top:0;white-space:nowrap;position:sticky;top:0}
+table.alv td{height:var(--row);padding:0 var(--cell-px);border:1px solid var(--line-soft);white-space:nowrap;line-height:1.3;vertical-align:middle}
+table.alv .n{text-align:right;font-variant-numeric:tabular-nums} .ledc{width:1px;text-align:center}
+table.alv td.clip{max-width:240px;overflow:hidden;text-overflow:ellipsis}
+table.alv tbody tr:nth-child(even){background:var(--surface-2)}
+table.alv tbody tr:hover:not(.nosel){background:var(--accent-weak)}
+table.alv tbody tr[data-act],table.alv tbody tr[data-go]{cursor:pointer}
+table.alv tr.off td{color:var(--fg-3)}
+table.alv td.empty{height:auto;padding:22px 12px;text-align:center;color:var(--fg-3);white-space:normal;background:var(--surface)}
+
+.note{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);background:var(--surface-2);padding:7px 9px;font-size:12px}
+.note .ni{flex:0 0 auto;color:var(--accent);margin-top:1px} .note .ni svg{width:15px;height:15px;display:block}
+.note.neg{border-color:var(--neg)} .note.neg .ni{color:var(--neg)}
+.note.pos{border-color:var(--pos)} .note.pos .ni{color:var(--pos)}
+.note.warn{border-color:var(--crit)} .note.warn .ni{color:var(--crit)}
+
+/* lépéssor */
+.chain{display:flex;overflow-x:auto}
+.cst{display:flex;align-items:center;gap:8px;padding:6px 12px;border-right:1px solid var(--line);flex:1;min-width:120px}
+.cst:last-child{border-right:0}
+.cst .cn{width:18px;height:18px;border:1px solid var(--line-strong);background:var(--surface-2);display:grid;place-items:center;font-size:11px;font-weight:700;flex:0 0 auto;color:var(--fg-2)}
+.cst small{display:block;color:var(--fg-3);font-size:10.5px} .cst b{font-size:11.5px}
+.cst.done .cn{background:var(--led-g);border-color:var(--led-g);color:var(--on-accent)}
+.cst.now{background:var(--accent-weak)} .cst.now .cn{background:var(--accent);border-color:var(--accent);color:var(--on-accent)} .cst.now b{color:var(--accent)}
+.cst.todo b{color:var(--fg-2);font-weight:400}
+
+/* ── TERMINÁL (a layouthoz igazítva: lapos keret, lapos fejléc, sötét kimenet) ── */
+.term-box{display:flex;flex-direction:column;min-height:0}
+.term-ctl{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:4px 6px;background:var(--surface);border-bottom:1px solid var(--line);flex:0 0 auto}
+.term-ctl .grow{flex:1}
+.term-ctl .tfilter{height:var(--rowsm);border:1px solid var(--line-strong);background:var(--surface);font-size:11px;padding:0 6px;width:150px}
+.term-ctl .tcount{font-size:10.5px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.term-ctl .ttimer{font-size:11px;color:var(--accent);font-family:var(--mono)}
+.term{flex:1;min-height:140px;overflow:auto;background:var(--term-bg);color:var(--term-fg);font-family:var(--mono);font-size:12px;line-height:1.5;padding:7px 9px}
+.term .t-welcome{color:var(--term-dim)}
+.tl{white-space:pre-wrap;word-break:break-word;padding:1px 0}
+.tl .traw{white-space:pre-wrap}
+.tl.info{color:var(--term-fg)} .tl.scan,.tl.action{color:#7fb6ff} .tl.warning{color:var(--led-y)}
+.tl.error{color:#ff8795} .tl.success,.tl.port-open{color:#67d08a} .tl.host{color:#9fd0ff;font-weight:700}
+.tl.network{color:#9fd0ff} .tl.cracked{color:#67d08a;font-weight:700} .tl.mac,.tl.os,.tl.service{color:#c7a3ff}
+.tl.port-closed,.tl.port-filtered{color:var(--term-dim)}
+.tl .tbadge{display:inline-block;margin-left:7px;font-size:9.5px;font-weight:700;padding:0 5px;border-radius:2px;background:#24405c;color:#cfe3ff;vertical-align:1px}
+.tl .tbadge.error{background:#5a1f26;color:#ffc2ca} .tl .tbadge.warning{background:#5a4320;color:#ffd98a}
+.tl .tbadge.port-open,.tl .tbadge.success{background:#1f4a2e;color:#aef0c2}
+.tl .texp{color:var(--term-dim);font-size:11px;padding:1px 0 3px 12px;border-left:2px solid var(--term-line);margin:1px 0 2px 2px}
+.tl a.cve{color:#ff9db0;text-decoration:underline}
+.term-tiles{display:flex;gap:1px;background:var(--line);border-top:1px solid var(--line);flex-wrap:wrap}
+.ttile{flex:1;min-width:84px;background:var(--surface);padding:5px 9px;cursor:default}
+.ttile.clk{cursor:pointer} .ttile.clk:hover{background:var(--accent-weak)}
+.ttile .tv{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums} .ttile .tk{font-size:10px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.03em}
+.ttile.r .tv{color:var(--neg)} .ttile.y .tv{color:var(--crit)} .ttile.g .tv{color:var(--pos)}
+
+/* ── terminál-központú konzol: kompakt vezérlősor + NAGY terminál + szerkeszthető parancssor ── */
+.tbar{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;border:1px solid var(--line-strong);background:var(--surface);padding:5px 8px;flex:0 0 auto}
+.tbar label{color:var(--fg-2);font-size:11px;white-space:nowrap}
+.tbar .in{height:var(--rowsm);width:auto}
+.tbar select.in{max-width:230px}
+.tbar input.in{width:160px}
+.tbar .grow{flex:1}
+.tbar .ck{min-height:var(--rowsm)}
+.tbar .ph{font-size:11px;color:var(--accent);font-family:var(--mono)}
+.console{display:flex;flex-direction:column;min-height:220px;border:1px solid var(--line-strong);background:var(--term-bg)}
+.main>.console,.main>.grow1>.console{flex:1 1 auto}
+.grow1>.console{flex:1 1 auto}
+.cons-hd{display:flex;align-items:center;gap:6px;padding:3px 6px 3px 9px;background:#0b141d;border-bottom:1px solid var(--term-line);color:var(--term-dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;flex:0 0 auto}
+.cons-hd .ch-r{margin-left:auto;display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:400}
+.cons-hd .cbtn{border:1px solid var(--term-line);background:#132030;color:var(--term-dim);height:20px;padding:0 7px;font-size:10.5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.cons-hd .cbtn:hover{background:#1b2d41;color:var(--term-fg)} .cons-hd .cbtn svg{width:11px;height:11px}
+.cons-hd .tfilter{height:20px;background:#0b1a12;border:1px solid var(--term-line);color:var(--term-fg);font-size:10.5px;padding:0 6px;width:130px}
+.cons-hd .ttimer{color:#67d08a;font-family:var(--mono)} .cons-hd .tcount{color:var(--term-dim);font-family:var(--mono)}
+.console .term{flex:1;border:0;min-height:120px}
+.cmdline{display:flex;align-items:center;border-top:1px solid var(--term-line);background:#0b141d;flex:0 0 auto}
+.cmdline .cprompt{color:#67d08a;font-family:var(--mono);font-weight:700;padding:0 4px 0 10px}
+.cmdline input{flex:1;min-width:0;border:0;background:transparent;color:var(--term-fg);font-family:var(--mono);font-size:12.5px;height:32px;padding:0 6px;outline:none}
+.cmdline input::placeholder{color:var(--term-dim)}
+.cmdline .crun{height:32px;border:0;border-left:1px solid var(--term-line);background:#1f4a2e;color:#aef0c2;padding:0 16px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.cmdline .crun:hover{background:#2a5f3c} .cmdline .crun svg{width:13px;height:13px}
+.cmdline .crun.stop{background:#5a1f26;color:#ffc2ca} .cmdline .crun.stop:hover{background:#6e2731}
+.cmdline .cmdent{color:var(--term-dim);font-family:var(--mono);font-size:13px;padding:0 12px 0 6px;cursor:default;flex:0 0 auto}
+details.histwrap{border:1px solid var(--line-strong);background:var(--surface);flex:0 0 auto}
+details.histwrap>summary{padding:4px 9px;cursor:pointer;font-size:11px;font-weight:700;color:var(--fg-2);text-transform:uppercase;letter-spacing:.03em;background:var(--surface-2);list-style:none}
+details.histwrap>summary::-webkit-details-marker{display:none}
+details.histwrap>summary::before{content:"▸ ";color:var(--fg-3)} details.histwrap[open]>summary::before{content:"▾ "}
+
+/* scan-type rács (nmap) */
+.scan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}
+.scan-btn{border:1px solid var(--line-strong);background:var(--surface);text-align:left;padding:5px 8px;cursor:pointer;display:grid;grid-template-columns:18px 1fr;gap:1px 7px;border-radius:0}
+.scan-btn:hover{background:var(--surface-2)} .scan-btn .si{grid-row:1/3;font-size:14px}
+.scan-btn b{font-size:11.5px} .scan-btn small{grid-column:2;color:var(--fg-3);font-size:10px}
+.scan-btn.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-weak)}
+.scan-btn.full{border-color:var(--crit)} .scan-btn.full.on{box-shadow:inset 0 0 0 1px var(--crit)}
+.scan-cat{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-3);font-weight:700;margin:8px 0 3px}
+.cmdprev{font-family:var(--mono);font-size:11.5px;background:var(--term-bg);color:#9fd0ff;border:1px solid var(--line-strong);padding:5px 8px;white-space:pre-wrap;word-break:break-all}
+.cmdprev.custom{color:#ffd98a}
+.phasebar{display:flex;border:1px solid var(--line-strong);background:var(--surface)}
+.phstep{flex:1;display:flex;align-items:center;gap:6px;padding:4px 8px;border-right:1px solid var(--line);font-size:11px;color:var(--fg-3)}
+.phstep:last-child{border-right:0} .phstep .pn{width:16px;height:16px;border:1px solid var(--line);display:grid;place-items:center;font-size:10px;flex:0 0 auto}
+.phstep.done{color:var(--pos)} .phstep.done .pn{background:var(--led-g);border-color:var(--led-g);color:#fff}
+.phstep.active{color:var(--accent);font-weight:600} .phstep.active .pn{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* history (nmap) */
+.hist{display:flex;align-items:center;gap:7px;min-height:var(--row);padding:3px 8px;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.hist .hb{font-size:9.5px;font-weight:700;padding:0 5px;border:1px solid var(--line)}
+.hist .hb.done{color:var(--pos);border-color:var(--pos)} .hist .hb.error{color:var(--neg);border-color:var(--neg)} .hist .hb.stopped{color:var(--crit);border-color:var(--crit)}
+.hist .ht{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis} .hist .hm{color:var(--fg-3);font-size:10px}
+#defList .hist.sel{background:var(--accent-weak);box-shadow:inset 2px 0 0 var(--accent)}
+.extdetail{background:var(--surface-2);border-bottom:1px solid var(--line)}
+.extdetail .desc{max-width:none}
+
+/* targets (wifite) */
+.tgt{display:flex;align-items:center;gap:7px;min-height:var(--row);padding:2px 8px;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.tgt .tnum{width:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.tgt .tess{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.tgt .tchip{font-size:9.5px;border:1px solid var(--line);padding:0 4px;color:var(--fg-2)}
+.tgt .tchip.wps{border-color:var(--crit);color:var(--crit)} .tgt .tsig{font-family:var(--mono);color:var(--accent)}
+.hsitem{display:flex;align-items:center;gap:7px;min-height:var(--rowsm);padding:2px 8px;border-bottom:1px solid var(--line-soft);font-size:11px}
+.hsitem .hn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* defense cards */
+.defgrp{margin-bottom:4px}
+.defcard{border:1px solid var(--line-strong);background:var(--surface);margin-bottom:6px}
+.defhead{display:flex;align-items:center;gap:8px;padding:5px 9px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.defhead .dn{font-weight:700} .defhead .dtag{font-size:10px;border:1px solid var(--line);padding:0 5px;color:var(--fg-2)}
+.defhead .di{margin-left:auto;cursor:pointer;border:1px solid var(--line);background:var(--surface);width:20px;height:18px;display:grid;place-items:center;font-size:11px}
+.defdesc{padding:7px 9px;font-size:11.5px;color:var(--fg-2);border-bottom:1px solid var(--line-soft);line-height:1.5}
+.defrow{display:grid;grid-template-columns:86px 1fr auto;gap:7px;align-items:center;padding:4px 9px;border-bottom:1px solid var(--line-soft)}
+.defrow .dk{font-size:10.5px;color:var(--fg-3);text-transform:uppercase}
+.defcode{margin:0;font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);padding:3px 6px;white-space:pre-wrap;overflow:auto}
+.defcopy{border:1px solid var(--line);background:var(--surface);cursor:pointer;width:22px;height:22px;display:grid;place-items:center}
+.defact{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 9px}
+.defstat{font-size:11px;margin-left:auto} .defstat.on{color:var(--pos)} .defstat.mid{color:var(--crit)} .defstat.off{color:var(--fg-3)}
+.defiface{display:inline-flex;align-items:center;gap:4px;font-size:11px}
+.defiface input{width:70px;height:var(--rowsm);border:1px solid var(--line-strong);padding:0 5px;font-family:var(--mono);font-size:11px}
+/* rendezett kód-blokk a Nézet panelben (parancs + futtató gomb + másolás egy helyen) */
+.cblock{border:1px solid var(--line-strong);margin:3px 0 10px}
+.cblock .cbh{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:3px 6px;background:var(--surface-2);border-bottom:1px solid var(--line);min-height:26px}
+.cblock .cbh .grow{flex:1}
+.cblock pre{margin:0;padding:7px 9px;font-family:var(--mono);font-size:11.5px;line-height:1.6;white-space:pre;overflow:auto;background:var(--surface)}
+.cblock .cbcopy{border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;height:20px;width:26px;font-size:11px;flex:0 0 auto}
+.cblock .cbcopy:hover{background:var(--surface-3)}
+.cblock .defiface input{width:62px}
+
+/* sys cards */
+.sysgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gap)}
+.syscard{border:1px solid var(--line-strong);background:var(--surface)}
+.syscard.danger{border-color:var(--neg)} .syscard.warn{border-color:var(--crit)}
+.sysct{display:flex;align-items:center;gap:7px;padding:4px 9px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:700;cursor:pointer;user-select:none}
+.sysct .scol{margin-left:auto;color:var(--fg-3)}
+.syscard.collapsed .sysbody{display:none}
+.sysbody{padding:4px 9px}
+.sysr{display:flex;justify-content:space-between;gap:10px;min-height:22px;align-items:center;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.sysr:last-child{border-bottom:0} .sysr .sk{color:var(--fg-2)} .sysr .sv{font-weight:600;text-align:right}
+.sv.ok,.sv.on{color:var(--pos)} .sv.bad{color:var(--neg)} .sv.warn{color:var(--crit)} .sv.off{color:var(--fg-3)}
+.sysflag{display:inline-block;font-size:10px;border:1px solid var(--line);padding:0 5px;margin:2px 3px 0 0}
+.sysflag.ok{color:var(--pos);border-color:var(--pos)} .sysflag.warn{color:var(--crit);border-color:var(--crit)} .sysflag.bad{color:var(--neg);border-color:var(--neg)}
+.sysnote{font-size:10.5px;color:var(--fg-3);margin-top:4px;line-height:1.4} .sysnote.bad{color:var(--neg)}
+.sysif{border:1px solid var(--line-soft);padding:4px 6px;margin-top:4px;font-size:11px}
+.sysif .sifn{font-weight:700} .sysbadge{font-size:9px;border:1px solid var(--line);padding:0 4px;margin-left:4px}
+.sysbadge.ok{color:var(--pos);border-color:var(--pos)} .sysbadge.off{color:var(--fg-3)} .sysbadge.def{color:var(--accent);border-color:var(--accent)}
+
+/* KB / docs */
+.kbwrap{display:grid;grid-template-columns:minmax(160px,210px) minmax(0,1fr);min-height:420px}
+.kbnav{border-right:1px solid var(--line);background:var(--surface-2);overflow:auto}
+.kbnav .kbl{padding:5px 12px;cursor:pointer;font-size:12px;color:var(--fg-2);border-bottom:1px solid var(--line-soft)}
+.kbnav .kbl.active{background:var(--accent-weak);color:var(--fg);box-shadow:inset 2px 0 0 var(--accent);font-weight:600}
+.kbbody{padding:16px 20px;overflow:auto;max-width:82ch;line-height:1.65}
+.kbbody h1,.kbbody h2,.kbbody h3{line-height:1.3} .kbbody pre{background:var(--term-bg);color:#cfe3d8;padding:8px 10px;overflow:auto;font-size:11.5px;border:1px solid var(--line-strong)}
+.kbbody code{font-family:var(--mono);background:var(--surface-3);padding:0 4px} .kbbody a{color:var(--accent)}
+
+/* right rail + drawer */
+.rail{flex:0 0 var(--rail);background:var(--menubar);border-left:1px solid var(--line);display:flex;flex-direction:column;padding-top:2px;z-index:6;overflow-y:auto}
+.rbtn{position:relative;display:flex;align-items:center;justify-content:center;padding:9px 1px;border:0;background:transparent;cursor:pointer;color:var(--fg-2);border-left:2px solid transparent;flex:0 0 auto}
+.rbtn svg{width:20px;height:20px}
+.rbtn:hover{background:var(--surface-2);color:var(--fg)} .rbtn.active{background:var(--surface);color:var(--accent);border-left-color:var(--accent)}
+.rbtn svg{width:19px;height:19px} .rbtn span{font-size:9.5px;white-space:nowrap}
+.rbtn.off,.rbtn:disabled{opacity:.34;cursor:not-allowed}
+.rbtn.off:hover,.rbtn:disabled:hover{background:transparent;color:var(--fg-2)}
+.rbtn .bdg{position:absolute;top:3px;right:4px;min-width:14px;height:14px;padding:0 3px;font-size:9px;font-weight:700;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}
+.rbtn .bdg.r{background:var(--led-r);color:#fff}
+.rsep{height:1px;background:var(--line);margin:3px 6px;flex:0 0 auto}
+.drawer{position:absolute;top:0;bottom:0;right:var(--rail);width:min(var(--drawer-w),calc(100% - var(--rail)));background:var(--surface);border-left:1px solid var(--line-strong);
+  display:flex;flex-direction:column;min-height:0;transform:translateX(calc(100% + var(--rail)));transition:transform .22s ease;z-index:5;visibility:hidden}
+body.drawer-open .drawer{transform:none;visibility:visible}
+@media (prefers-reduced-motion:reduce){.drawer{transition:none}}
+.dgrip{position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2}
+.dgrip:hover::after,body.resizing .dgrip::after{content:"";position:absolute;left:3px;top:0;bottom:0;width:2px;background:var(--accent)}
+.drawer .dh{display:flex;align-items:center;gap:8px;height:var(--boxtitle);padding:0 6px 0 10px;background:var(--surface-2);border-bottom:1px solid var(--line);flex:0 0 auto}
+.drawer .dh b{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.drawer .dh .dsub{font-size:11px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer .dh .dh-r{margin-left:auto;display:flex;gap:2px}
+.dxbtn{width:22px;height:22px;border:1px solid transparent;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.dxbtn:hover{background:var(--surface);border-color:var(--line)} .dxbtn svg{width:14px;height:14px} .dxbtn.on{color:var(--accent);background:var(--accent-weak)}
+.drawer .db{flex:1;overflow:auto;min-height:0;display:flex;flex-direction:column}
+.desc{padding:12px 14px;font-size:12.5px} .desc h4{margin:0 0 3px;font-size:14px} .desc .lead{color:var(--fg-2);margin-bottom:12px}
+.desc h5{margin:14px 0 4px;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-3)}
+.desc p{margin:0 0 9px;line-height:1.6} .desc code{font-family:var(--mono);background:var(--surface-3);padding:0 4px;font-size:11.5px}
+.desc .warn{border:1px solid var(--led-y);background:color-mix(in srgb,var(--led-y) 12%,var(--surface));padding:8px 10px;margin:8px 0}
+.dtool{display:flex;gap:4px;align-items:center;padding:5px 8px;border-bottom:1px solid var(--line);background:var(--surface);flex:0 0 auto;flex-wrap:wrap}
+.dstate{display:flex;align-items:center;gap:6px;padding:3px 10px;font-size:11px;border-bottom:1px solid var(--line-soft);background:var(--surface-2);flex:0 0 auto;min-height:var(--rowsm)}
+.noteedit{padding:8px;flex:1;display:flex;min-height:160px}
+.noteedit textarea{flex:1;width:100%;border:1px solid var(--line-strong);background:var(--surface);font-family:var(--mono);font-size:12px;line-height:1.5;padding:8px;resize:none}
+.logt{width:100%;border-collapse:collapse;font-size:11.5px}
+.logt td{height:var(--row);padding:0 var(--cell-px);border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.logt td.t{color:var(--fg-3);font-family:var(--mono);white-space:nowrap;width:1px}
+.logt td.m{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logt tr.r td.m{color:var(--neg)} .logt tr.y td.m{color:var(--crit)} .logt tr.b td.m{color:var(--fg-2)}
+.dempty{padding:26px 14px;text-align:center;color:var(--fg-3);font-size:12px}
+
+/* status bar */
+.status{display:flex;align-items:center;background:var(--surface-2);border-top:1px solid var(--line-strong);font-size:11px;color:var(--fg-2);min-width:0}
+.status .s{display:flex;align-items:center;gap:5px;padding:0 9px;height:100%;border-right:1px solid var(--line);white-space:nowrap}
+.status .msg{flex:1;min-width:0;overflow:hidden} .status .msg span:last-child{overflow:hidden;text-overflow:ellipsis}
+.status b{color:var(--fg);font-weight:600;margin-left:4px} .status .s:last-child{border-right:0}
+.status .zbtn{border:1px solid var(--line-strong);background:var(--surface);min-width:18px;height:16px;line-height:1;cursor:pointer;font-size:13px;padding:0;color:var(--fg-2);display:inline-grid;place-items:center}
+.status .zbtn:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.status .zinp{width:36px;height:16px;border:1px solid var(--line-strong);background:var(--surface);text-align:center;font-size:11px;padding:0;font-variant-numeric:tabular-nums}
+.status .zinp:focus{outline:1px solid var(--accent);outline-offset:-1px}
+
+/* toast */
+.toasts{position:absolute;right:calc(var(--rail) + 10px);bottom:30px;display:flex;flex-direction:column;gap:5px;z-index:40;pointer-events:none}
+.toast{border:1px solid var(--line-strong);background:var(--surface);padding:6px 11px;font-size:11.5px;box-shadow:2px 2px 0 rgba(0,0,0,.12);max-width:320px}
+.toast.success{border-left:3px solid var(--led-g)} .toast.error{border-left:3px solid var(--led-r)} .toast.warning{border-left:3px solid var(--led-y)} .toast.info{border-left:3px solid var(--accent)}
+
+.scrim{display:none;position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:6}
+pre.outpre{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.5;white-space:pre-wrap;background:var(--term-bg);color:var(--term-fg);padding:8px 10px;overflow:auto;min-height:140px}
+
+/* több képernyőméret */
+@container app (min-width:1100px){
+  body.docked .drawer{position:static;flex:0 0 var(--drawer-w);width:var(--drawer-w);transform:none;transition:none;display:none}
+  body.docked.drawer-open .drawer{display:flex}
+}
+@container app (max-width:1099px){.dxbtn.pin{display:none}}
+@container app (max-width:820px){
+  .tree{position:absolute;top:0;bottom:0;left:0;width:min(280px,80%);z-index:7;transform:translateX(-102%);transition:transform .2s;display:block!important}
+  body.tree-open .tree{transform:none;box-shadow:3px 0 0 rgba(0,0,0,.12)} body.tree-open .scrim{display:block}
+  .menubar .m.opt{display:none} .status .hs{display:none} .titlebar .path{display:none} .kbwrap{grid-template-columns:1fr}
+}
+@container app (max-width:599px){.menubar .m:not(.keep){display:none} .cmd input{width:92px} .toolbar .hs{display:none} .drawer{width:calc(100% - var(--rail))} .status .hs2{display:none} :root{--label-w:112px}}
+@container app (max-height:520px){.note.intro{display:none} .rbtn span:not(.bdg){display:none} .rbtn{padding:8px 1px}}
+@media print{.menubar,.toolbar,.tree,.rail,.drawer,.status,.toasts{display:none!important}.app{zoom:1;width:auto;height:auto;display:block}.main{overflow:visible}html,body{overflow:visible}}
+</style>
 </head>
 <body>
 
-  <div class="bg-grid"></div>
-  <div class="scan-line"></div>
+<div class="app" id="app">
+  <div class="menubar" id="menubar">
+    <span class="brand"><b>EthTest</b> Konzol</span>
+    <button class="m keep" data-menu="Program">Program</button><button class="m opt" data-menu="Művelet">Művelet</button><button class="m opt" data-menu="Ugrás">Ugrás</button><button class="m" data-menu="Eszközök">Eszközök</button><button class="m" data-menu="Nézet">Nézet</button><button class="m keep" data-menu="Súgó">Súgó</button>
+    <span class="grow"></span>
+    <span class="hdr-ind" id="hdrBatt" title="Akkumulátor">🔋 <b>—</b></span>
+    <span class="hdr-ind" id="hdrWifi" title="WiFi — mire vagy csatlakozva">📶 <b>—</b></span>
+    <span class="hdr-ind hdr-mon" id="hdrMon" style="display:none" title="Monitor mód aktív az audit-interfészen">🛰️ <b>MONITOR</b></span>
+    <span class="hdr-ind" id="hdrSsh" title="SSH / elérhetőség"><span class="led" id="onlineLed"></span><b id="hdrSshTxt">—</b></span>
+    <div class="mpop" id="mpop"></div>
+  </div>
 
-  <header class="header">
-    <div class="logo">
-      <pre class="logo-ascii">
-<span class="logo-text">╔═╗╔╦╗╦ ╦</span><span class="logo-accent">╔╦╗╔═╗╔═╗╔╦╗</span>
-<span class="logo-text">║╣  ║ ╠═╣</span><span class="logo-accent"> ║ ║╣ ╚═╗ ║ </span>
-<span class="logo-text">╚═╝ ╩ ╩ ╩</span><span class="logo-accent"> ╩ ╚═╝╚═╝ ╩ </span></pre>
-    </div>
-    <div class="header-meta">
-      <span class="status-dot" id="statusDot"></span>
-      <span id="statusText" data-i18n="status.idle">Készenléti állapot</span>
-    </div>
-    <nav class="nav">
-      <button class="nav-btn active" data-tab="home" data-i18n="nav.home">🏠 Főoldal</button>
-      <button class="nav-btn" data-tab="wifite" data-i18n="nav.wifi">WiFi Audit</button>
-      <button class="nav-btn" data-tab="nmap" data-i18n="nav.nmap">Nmap Scan</button>
-    </nav>
-    <select id="langSelect" class="lang-select">
-      <option value="hu">🇭🇺 Magyar</option>
-      <option value="en">🇬🇧 English</option>
-      <option value="de">🇩🇪 Deutsch</option>
-      <option value="es">🇪🇸 Español</option>
-    </select>
-  </header>
+  <div class="toolbar">
+    <button class="tb" data-cmd="tree" title="Navigációs fa be/ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <div class="cmd"><span class="ok">›</span><input id="cmdIn" placeholder="/modul (pl. nmap)" aria-label="Parancsmező" autocomplete="off" spellcheck="false"></div>
+    <button class="tb" data-cmd="run" title="Ugrás (Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <span class="sep"></span>
+    <button class="tb" data-cmd="back" title="Vissza (F3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+    <button class="tb hs" data-cmd="fwd" title="Előre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button class="tb" data-cmd="refresh" title="Frissít"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 10-2 6m2 2v-5h-5"/></svg></button>
+    <span class="sep"></span>
+    <button class="tb hs" data-go="naplo" title="Napló"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h10l4 4v14H5z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></button>
+    <button class="tb hs" data-cmd="print" title="Nyomtatás"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z"/></svg></button>
+    <span class="grow"></span>
+    <select class="langsel hs" id="langSel" title="Nyelv / Language"><option value="hu">🇭🇺 HU</option><option value="en">🇬🇧 EN</option><option value="de">🇩🇪 DE</option><option value="es">🇪🇸 ES</option></select>
+    <button class="tb" data-cmd="theme" title="Világos / sötét"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg></button>
+    <button class="tb" data-go="kb" title="Súgó / Tudásbázis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .2c0 1.7-2.5 2-2.5 3.8"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></button>
+    <button class="tb danger" data-cmd="shutdown" title="Kilépés — a szerver is leáll, a Wi-Fi visszaáll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v8M7.5 7a7 7 0 109 0"/></svg></button>
+  </div>
 
-  <main class="main">
+  <div class="titlebar">
+    <span class="scr" id="scrTitle">Áttekintés</span>
+    <span class="path" id="scrPath">Munkaterület</span>
+    <div class="appbar" id="appbar"></div>
+  </div>
 
-    <!-- ── HOME TAB (Wiki Style) ── -->
-    <section class="tab active" id="tab-home">
-      <div class="wiki-container">
-        <aside class="wiki-sidebar">
-          <div class="wiki-nav-title" data-i18n="nav.home">📚 Tudásbázis</div>
-          <nav class="wiki-nav">
-            <a href="#guide" class="wiki-nav-link active" data-i18n="home.nav.guide"></a>
-            <a href="#legal" class="wiki-nav-link" data-i18n="home.nav.legal"></a>
-            <a href="#method" class="wiki-nav-link" data-i18n="home.nav.method"></a>
-            <a href="#nmap" class="wiki-nav-link" data-i18n="home.nav.nmap"></a>
-            <a href="#wifi" class="wiki-nav-link" data-i18n="home.nav.wifi"></a>
-            <a href="#platforms" class="wiki-nav-link" data-i18n="home.nav.platforms"></a>
-          </nav>
-        </aside>
-        
-        <div class="wiki-content">
-          <!-- Dinamikusan betöltött tartalom helye -->
-          <div class="doc-loader">Dokumentáció betöltése...</div>
-        </div>
+  <div class="body">
+    <div class="scrim" id="scrim"></div>
+    <nav class="tree" id="tree"><div class="th">Munkaterület<button class="dxbtn" data-cmd="tree" title="Fa elrejtése"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 6l-6 6 6 6M19 6l-6 6 6 6"/></svg></button></div><div id="treeList"></div></nav>
+    <main class="main" id="main"></main>
+    <section class="drawer" id="drawer" aria-hidden="true" inert>
+      <div class="dgrip" id="dgrip" title="Húzd a szélesség állításához · dupla kattintás: alap"></div>
+      <div class="dh"><span id="drawerIcon"></span><b id="drawerTitle"></b><span class="dsub" id="drawerSub"></span>
+        <span class="dh-r">
+          <button class="dxbtn pin" id="drawerPin" data-cmd="dock" title="Rögzítés a tartalom mellé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l-1 6 3 3H7l3-3zM12 12v9"/></svg></button>
+          <button class="dxbtn" data-cmd="closeTool" title="Bezárás (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </span>
       </div>
+      <div class="db" id="drawerBody"></div>
     </section>
+    <nav class="rail" id="rail"></nav>
+  </div>
 
-    <!-- ── WIFITE TAB ── -->
-    <section class="tab" id="tab-wifite">
-      <div class="panel-grid">
-        <aside class="side-panel">
-          <h2 class="panel-title" data-i18n="wifite.title">⚡ Wifite Konfiguráció</h2>
+  <footer class="status">
+    <span class="s msg"><span class="led g" id="statusLed"></span><span id="statusMsg">Kész</span></span>
+    <span class="s hs" id="connCell"><span class="led" id="connLed"></span><span id="connTxt">kapcsolódás…</span></span>
+    <span class="s hs2">Eszköz:<b>uConsole</b></span>
+    <span class="s hs2">Interfész:<b id="stIface">wlan1</b></span>
+    <span class="s hs2" id="platCell">Platform:<b id="stPlat">?</b></span>
+    <span class="s" title="Felület mérete (%) — beleírhatsz, vagy − / +"><span style="margin-right:2px">Méret:</span><button class="zbtn" data-cmd="zoomOut" aria-label="Kisebb">−</button><input id="zoomVal" class="zinp mono" value="100" inputmode="numeric" aria-label="Méret százalék"><span>%</span><button class="zbtn" data-cmd="zoomIn" aria-label="Nagyobb">+</button></span>
+    <span class="s mono hs" id="clock"></span>
+  </footer>
+  <div class="toasts" id="toasts"></div>
+</div>
+<input type="file" id="ptFileInput" accept=".sh,.py,.rb" hidden>
+<input type="file" id="wlFileInput" accept=".txt,.lst,.dict" hidden>
 
-          <div class="info-box" data-i18n-html="wifite.info">
-            <strong>Mi ez?</strong><br>
-            A <code>wifite</code> egy automatizált WiFi biztonsági tesztelő eszköz.
-            <br><br>
-            <strong>⚠️ Fontos:</strong> Csak saját hálózaton használd!
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" data-i18n="wifite.label.mode">Szkennelési mód</label>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input type="radio" name="wifiteMode" value="wpa" checked>
-                <span class="radio-custom"></span>
-                <div>
-                  <strong data-i18n="wifite.wpa.title">WPA/WPA2</strong>
-                  <small data-i18n="wifite.wpa.desc">Modern titkosítás tesztelése</small>
-                </div>
-              </label>
-              <label class="radio-option">
-                <input type="radio" name="wifiteMode" value="wps">
-                <span class="radio-custom"></span>
-                <div>
-                  <strong data-i18n="wifite.wps.title">WPS</strong>
-                  <small data-i18n="wifite.wps.desc">WPS gomb sebezhetőség</small>
-                </div>
-              </label>
-              <label class="radio-option">
-                <input type="radio" name="wifiteMode" value="all">
-                <span class="radio-custom"></span>
-                <div>
-                  <strong data-i18n="wifite.all.title">Teljes szkennelés</strong>
-                  <small data-i18n="wifite.all.desc">Minden módszer</small>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" data-i18n="wifite.label.extra">Extra opciók</label>
-            <label class="checkbox-option">
-              <input type="checkbox" id="optKill" checked>
-              <span class="check-custom"></span>
-              <div>
-                <strong>--kill</strong>
-                <small data-i18n="wifite.kill.desc">Interferáló folyamatok leállítása</small>
-              </div>
-            </label>
-            <label class="checkbox-option">
-              <input type="checkbox" id="optRandomMac">
-              <span class="check-custom"></span>
-              <div>
-                <strong>--random-mac</strong>
-                <small data-i18n="wifite.mac.desc">Véletlenszerű MAC cím használata</small>
-              </div>
-            </label>
-          </div>
-
-          <div class="btn-group">
-            <button class="btn btn-primary" id="wifiteStart">
-              <span class="btn-icon">▶</span> <span data-i18n="wifite.btn.start">Indítás</span>
-            </button>
-            <button class="btn btn-danger" id="wifiteStop" disabled>
-              <span class="btn-icon">■</span> <span data-i18n="wifite.btn.stop">Leállítás</span>
-            </button>
-          </div>
-
-          <div class="req-box">
-            <div class="req-title" data-i18n="wifite.req.title">Rendszerkövetelmények</div>
-            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.linux">Linux (Kali / Parrot / Ubuntu) – teljes támogatás</span></div>
-            <div class="req-item"><span class="req-warn">●</span> <span data-i18n="wifite.req.macos">macOS – wifite nem elérhető, nmap igen</span></div>
-            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.monitor">Monitor módot támogató WiFi kártya</span></div>
-            <div class="req-item"><span class="req-ok">●</span> <span data-i18n="wifite.req.root">Root jogosultság</span> (<code>sudo npm start</code>)</div>
-          </div>
-        </aside>
-
-        <div class="output-panel">
-          <div class="output-header">
-            <span class="output-title" data-i18n="out.wifite.title">Terminal kimenet</span>
-            <div class="output-controls">
-              <span id="wifiteLineCount" class="line-count">0 <span data-i18n="out.lines">sor</span></span>
-              <button class="ctrl-btn" id="wifiteClear" data-i18n="out.clear">Törlés</button>
-              <button class="ctrl-btn" id="wifiteExport" data-i18n="out.export">Exportálás</button>
-            </div>
-          </div>
-          <div class="terminal" id="wifiteOutput">
-            <div class="terminal-welcome">
-              <pre class="ascii-art">
-  ╦ ╦╦╔═╗╦╔╦╗╔═╗
-  ║║║║╠╣ ║ ║ ║╣
-  ╚╩╝╩╚  ╩ ╩ ╚═╝  v1.0</pre>
-              <p class="welcome-text" data-i18n="welcome.wifite.text">Etikus WiFi tesztelő környezet kezdőknek.</p>
-              <p class="welcome-hint"><span data-i18n="welcome.wifite.hint">Konfiguráld a beállításokat, majd nyomj</span> <kbd data-i18n="welcome.btn">Indítás</kbd>-t.</p>
-            </div>
-          </div>
-          <div class="summary-bar" id="wifiteSummary" style="display:none">
-            <div class="summary-item" id="sumNetworks">
-              <span class="sum-value">0</span>
-              <span class="sum-label" data-i18n="sum.networks">Hálózat</span>
-            </div>
-            <div class="summary-item" id="sumHandshakes">
-              <span class="sum-value">0</span>
-              <span class="sum-label" data-i18n="sum.handshakes">Handshake</span>
-            </div>
-            <div class="summary-item" id="sumCracked">
-              <span class="sum-value">0</span>
-              <span class="sum-label" data-i18n="sum.cracked">Feltörve</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── NMAP TAB ── -->
-    <section class="tab" id="tab-nmap">
-      <div class="panel-grid">
-        <aside class="side-panel">
-          <div class="side-panel-sticky">
-            <h2 class="panel-title" data-i18n="nmap.title">🔍 Nmap Szkennelés</h2>
-
-            <div class="form-group">
-              <label class="form-label" data-i18n="nmap.label.target">Cél IP cím / tartomány</label>
-              <input type="text" class="form-input" id="nmapTarget"
-                data-i18n-ph="nmap.target.ph"
-                placeholder="pl. 192.168.1.1 vagy 192.168.1.0/24">
-              <small class="form-hint" data-i18n="nmap.target.hint">Csak saját hálózatod! A /24 az egész alhálózatot jelenti.</small>
-            </div>
-
-            <div class="form-group" style="margin-top:0.6rem">
-              <label class="form-label" data-i18n="nmap.label.gen_cmd">Generált parancs <span class="form-label-opt" data-i18n="nmap.label.live_prev">(élő előnézet)</span></label>
-              <div class="cmd-preview-wrap" id="cmdPreviewWrap">
-                <span class="cmd-preview-prompt">$</span>
-                <span class="cmd-preview-text" id="cmdPreviewText">nmap -sn &lt;cél&gt;</span>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-top:0.75rem">
-              <label class="form-label" data-i18n="nmap.label.custom_cmd">Egyéni parancs <span class="form-label-opt" data-i18n="nmap.label.optional">(opcionális)</span></label>
-              <div class="cmd-input-wrap">
-                <span class="cmd-prompt">$</span>
-                <input type="text" class="cmd-input" id="nmapCustomCmd"
-                  data-i18n-ph="nmap.custom_cmd.ph"
-                  placeholder="nmap -sV -p 22,80,443 192.168.1.1"
-                  spellcheck="false" autocomplete="off">
-              </div>
-              <small class="form-hint" data-i18n="nmap.custom_cmd.hint">Ha ki van töltve, felülírja a fenti cél- és típusbeállításokat.</small>
-            </div>
-
-            <div class="sudo-toggle-row">
-              <div class="sudo-toggle-info">
-                <label class="sudo-toggle-label" for="nmapSudo">
-                  <span class="sudo-icon">🔑</span>
-                  <span data-i18n="nmap.label.sudo">Sudo mód</span>
-                  <small class="form-label-opt" data-i18n="nmap.label.root_priv">(root jog)</small>
-                </label>
-                <span class="sudo-hint" data-i18n="nmap.sudo.hint">Linux: OS/SYN/UDP scanhez · macOS: <code>sudo npm start</code> helyett</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="nmapSudo">
-                <span class="toggle-track"></span>
-              </label>
-            </div>
-
-            <div class="btn-group" style="margin-top:0.6rem">
-              <button class="btn btn-primary" id="nmapStart">
-                <span class="btn-icon">▶</span> <span data-i18n="nmap.btn.start">Indítás</span>
-              </button>
-              <button class="btn btn-danger" id="nmapStop" disabled>
-                <span class="btn-icon">■</span> <span data-i18n="nmap.btn.stop">Leállítás</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 🏓 Felderítés -->
-          <div class="form-group" style="margin-top: 0.9rem;">
-            <label class="form-label" data-i18n="nmap.label.discovery">🏓 Felderítés</label>
-            <div class="scan-types">
-              <button class="scan-type-btn active" data-type="ping">
-                <span class="st-icon">🏓</span>
-                <strong data-i18n="nmap.ping.title">Ping Scan</strong>
-                <small data-i18n="nmap.ping.desc">Ki van online?</small>
-              </button>
-              <button class="scan-type-btn" data-type="os">
-                <span class="st-icon">💻</span>
-                <strong data-i18n="nmap.os.title">OS Detection</strong>
-                <small data-i18n="nmap.os.desc">Op. rendszer</small>
-              </button>
-              <button class="scan-type-btn" data-type="mac">
-                <span class="st-icon">🔖</span>
-                <strong data-i18n="nmap.mac.title">MAC + Gyártó</strong>
-                <small data-i18n="nmap.mac.desc">ARP, LAN-only</small>
-              </button>
-              <button class="scan-type-btn" data-type="nbstat">
-                <span class="st-icon">🖥️</span>
-                <strong data-i18n="nmap.nbstat.title">NetBIOS</strong>
-                <small data-i18n="nmap.nbstat.desc">Windows nevek</small>
-              </button>
-              <button class="scan-type-btn" data-type="traceroute">
-                <span class="st-icon">🛤️</span>
-                <strong data-i18n="nmap.traceroute.title">Traceroute</strong>
-                <small data-i18n="nmap.traceroute.desc">Hálózati útvonal</small>
-              </button>
-              <button class="scan-type-btn" data-type="dnsbrute">
-                <span class="st-icon">🔤</span>
-                <strong data-i18n="nmap.dnsbrute.title">DNS Brute</strong>
-                <small data-i18n="nmap.dnsbrute.desc">Subdomének</small>
-              </button>
-              <button class="scan-type-btn" data-type="discovery">
-                <span class="st-icon">🗺️</span>
-                <strong>Discovery</strong>
-                <small data-i18n="nmap.discovery.desc">Részletes feltérk.</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- 🔌 Port Scan -->
-          <div class="form-group">
-            <label class="form-label" data-i18n="nmap.label.portscan">🔌 Port Scan</label>
-            <div class="scan-types">
-              <button class="scan-type-btn" data-type="fast">
-                <span class="st-icon">⚡</span>
-                <strong data-i18n="nmap.fast.title">Gyors</strong>
-                <small data-i18n="nmap.fast.desc">Top 100 port</small>
-              </button>
-              <button class="scan-type-btn" data-type="full">
-                <span class="st-icon">🔬</span>
-                <strong data-i18n="nmap.full.title">Teljes</strong>
-                <small data-i18n="nmap.full.desc">Top 1000 + OS*</small>
-              </button>
-              <button class="scan-type-btn" data-type="udp">
-                <span class="st-icon">📡</span>
-                <strong data-i18n="nmap.udp.title">UDP Scan</strong>
-                <small data-i18n="nmap.udp.desc">DNS, DHCP, SNMP</small>
-              </button>
-              <button class="scan-type-btn" data-type="allports">
-                <span class="st-icon">🌐</span>
-                <strong data-i18n="nmap.allports.title">Összes port</strong>
-                <small data-i18n="nmap.allports.desc">65535, lassú</small>
-              </button>
-              <button class="scan-type-btn" data-type="stealth">
-                <span class="st-icon">👻</span>
-                <strong data-i18n="nmap.stealth.title">Stealth SYN</strong>
-                <small data-i18n="nmap.stealth.desc">Félkézfogásos</small>
-              </button>
-              <button class="scan-type-btn" data-type="ack">
-                <span class="st-icon">🧱</span>
-                <strong data-i18n="nmap.ack.title">ACK Scan</strong>
-                <small data-i18n="nmap.ack.desc">Tűzfal feltérképezés</small>
-              </button>
-              <button class="scan-type-btn" data-type="fin">
-                <span class="st-icon">🏁</span>
-                <strong data-i18n="nmap.fin.title">FIN Scan</strong>
-                <small data-i18n="nmap.fin.desc">FIN evasion</small>
-              </button>
-              <button class="scan-type-btn" data-type="null">
-                <span class="st-icon">⬛</span>
-                <strong data-i18n="nmap.null.title">NULL Scan</strong>
-                <small data-i18n="nmap.null.desc">Flag nélkül</small>
-              </button>
-              <button class="scan-type-btn" data-type="xmas">
-                <span class="st-icon">🎄</span>
-                <strong data-i18n="nmap.xmas.title">Xmas Scan</strong>
-                <small data-i18n="nmap.xmas.desc">FIN+PSH+URG</small>
-              </button>
-              <button class="scan-type-btn" data-type="ipproto">
-                <span class="st-icon">🔢</span>
-                <strong data-i18n="nmap.ipproto.title">IP Proto</strong>
-                <small data-i18n="nmap.ipproto.desc">Protokoll scan</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- 🔬 Szolgáltatás elemzés -->
-          <div class="form-group">
-            <label class="form-label" data-i18n="nmap.label.service">🔬 Szolgáltatás elemzés</label>
-            <div class="scan-types">
-              <button class="scan-type-btn" data-type="ports">
-                <span class="st-icon">🔌</span>
-                <strong data-i18n="nmap.ports.title">Port + Verzió</strong>
-                <small data-i18n="nmap.ports.desc">Top 100 + szoftver</small>
-              </button>
-              <button class="scan-type-btn" data-type="scripts">
-                <span class="st-icon">📜</span>
-                <strong data-i18n="nmap.scripts.title">NSE Alap</strong>
-                <small data-i18n="nmap.scripts.desc">Default scriptek</small>
-              </button>
-              <button class="scan-type-btn" data-type="banner">
-                <span class="st-icon">🏷️</span>
-                <strong data-i18n="nmap.banner.title">Banner Grab</strong>
-                <small data-i18n="nmap.banner.desc">Szoftver fejléc</small>
-              </button>
-              <button class="scan-type-btn" data-type="auth">
-                <span class="st-icon">🔑</span>
-                <strong>Auth</strong>
-                <small data-i18n="nmap.auth.desc">Gyenge hitelesítés</small>
-              </button>
-              <button class="scan-type-btn" data-type="httpenum">
-                <span class="st-icon">📂</span>
-                <strong data-i18n="nmap.httpenum.title">HTTP Enum</strong>
-                <small data-i18n="nmap.httpenum.desc">Web könyvtárak</small>
-              </button>
-              <button class="scan-type-btn" data-type="httpmethods">
-                <span class="st-icon">⚙️</span>
-                <strong data-i18n="nmap.httpmethods.title">HTTP Methods</strong>
-                <small data-i18n="nmap.httpmethods.desc">PUT, TRACE, DEL</small>
-              </button>
-              <button class="scan-type-btn" data-type="dbinfo">
-                <span class="st-icon">🗄️</span>
-                <strong data-i18n="nmap.dbinfo.title">DB Info</strong>
-                <small data-i18n="nmap.dbinfo.desc">MySQL, MSSQL</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- 🛡️ Sebezhetőség -->
-          <div class="form-group">
-            <label class="form-label" data-i18n="nmap.label.vulnscan">🛡️ Sebezhetőség</label>
-            <div class="scan-types">
-              <button class="scan-type-btn" data-type="vuln">
-                <span class="st-icon">🛡️</span>
-                <strong>Vuln</strong>
-                <small data-i18n="nmap.vuln.desc">Sebezhetőségek</small>
-              </button>
-              <button class="scan-type-btn" data-type="smb">
-                <span class="st-icon">📁</span>
-                <strong data-i18n="nmap.smb.title">SMB Vuln</strong>
-                <small data-i18n="nmap.smb.desc">EternalBlue, MS17</small>
-              </button>
-              <button class="scan-type-btn" data-type="httpvuln">
-                <span class="st-icon">🌍</span>
-                <strong data-i18n="nmap.httpvuln.title">HTTP Vuln</strong>
-                <small data-i18n="nmap.httpvuln.desc">XSS, SQLi, CSRF</small>
-              </button>
-              <button class="scan-type-btn" data-type="ssl">
-                <span class="st-icon">🔒</span>
-                <strong data-i18n="nmap.ssl.title">SSL/TLS</strong>
-                <small data-i18n="nmap.ssl.desc">Heartbleed, POODLE</small>
-              </button>
-              <button class="scan-type-btn" data-type="shellshock">
-                <span class="st-icon">🐚</span>
-                <strong data-i18n="nmap.shellshock.title">Shellshock</strong>
-                <small data-i18n="nmap.shellshock.desc">CVE-2014-6271</small>
-              </button>
-              <button class="scan-type-btn" data-type="rdpvuln">
-                <span class="st-icon">🖥️</span>
-                <strong data-i18n="nmap.rdpvuln.title">RDP Vuln</strong>
-                <small data-i18n="nmap.rdpvuln.desc">MS12-020, port 3389</small>
-              </button>
-              <button class="scan-type-btn" data-type="dbvuln">
-                <span class="st-icon">🗄️</span>
-                <strong data-i18n="nmap.dbvuln.title">DB Vuln</strong>
-                <small data-i18n="nmap.dbvuln.desc">MySQL, MSSQL CVE</small>
-              </button>
-              <button class="scan-type-btn" data-type="malware">
-                <span class="st-icon">🦠</span>
-                <strong>Malware</strong>
-                <small data-i18n="nmap.malware.desc">Backdoor nyomok</small>
-              </button>
-              <button class="scan-type-btn" data-type="exploit">
-                <span class="st-icon">💣</span>
-                <strong>Exploit</strong>
-                <small data-i18n="nmap.exploit.desc">Aktív exploitok</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- 💥 Offenzív -->
-          <div class="form-group">
-            <label class="form-label" data-i18n="nmap.label.offensive">💥 Offenzív / Speciális</label>
-            <div class="scan-types">
-              <button class="scan-type-btn" data-type="brute">
-                <span class="st-icon">🔨</span>
-                <strong>Brute</strong>
-                <small data-i18n="nmap.brute.desc">Jelszó törés</small>
-              </button>
-              <button class="scan-type-btn" data-type="dos">
-                <span class="st-icon">💥</span>
-                <strong>DoS</strong>
-                <small data-i18n="nmap.dos.desc">Túlterheléses seb.</small>
-              </button>
-              <button class="scan-type-btn" data-type="fuzzer">
-                <span class="st-icon">🎲</span>
-                <strong>Fuzzer</strong>
-                <small data-i18n="nmap.fuzzer.desc">Input fuzzelés</small>
-              </button>
-              <button class="scan-type-btn" data-type="decoy">
-                <span class="st-icon">🎭</span>
-                <strong data-i18n="nmap.decoy.title">Decoy</strong>
-                <small data-i18n="nmap.decoy.desc">Hamis forrás IP-k</small>
-              </button>
-              <button class="scan-type-btn" data-type="frag">
-                <span class="st-icon">🧩</span>
-                <strong data-i18n="nmap.frag.title">Fragmentálás</strong>
-                <small data-i18n="nmap.frag.desc">IP tűzfal bypass</small>
-              </button>
-            </div>
-          </div>
-
-          <!-- 💣 Teljes Audit -->
-          <div class="form-group">
-            <label class="form-label" data-i18n="nmap.label.audit">💣 Teljes Audit</label>
-            <div class="scan-types">
-              <button class="scan-type-btn scan-type-full" data-type="audit">
-                <span class="st-icon">💣</span>
-                <strong data-i18n="nmap.audit.title">Teljes Audit</strong>
-                <small data-i18n="nmap.audit.desc">Mindent egybe – lassú!</small>
-              </button>
-            </div>
-          </div>
-
-        </aside>
-
-        <div class="output-panel">
-          <div class="output-header">
-            <div class="output-title-group">
-              <span class="output-title" data-i18n="out.nmap.title">Szkennelés eredménye</span>
-              <span id="nmapTimer" class="scan-timer" style="display:none">⏱ 00:00</span>
-            </div>
-            <div class="output-controls">
-              <input type="text" class="terminal-filter" id="nmapFilter" data-i18n-ph="out.filter_ph" placeholder="🔍 szűrés...">
-              <span id="nmapLineCount" class="line-count">0 <span data-i18n="out.lines">sor</span></span>
-              <button class="ctrl-btn" id="nmapClear" data-i18n="out.clear">Törlés</button>
-              <button class="ctrl-btn" id="nmapExport" data-i18n="out.export">Exportálás</button>
-            </div>
-          </div>
-          <div class="phase-bar" id="phaseBar" style="display:none">
-            <div class="phase-step" data-phase="1"><span class="phase-dot"></span><span class="phase-label">Host Discovery</span></div>
-            <div class="phase-sep"></div>
-            <div class="phase-step" data-phase="2"><span class="phase-dot"></span><span class="phase-label">Port Scan</span></div>
-            <div class="phase-sep"></div>
-            <div class="phase-step" data-phase="3"><span class="phase-dot"></span><span class="phase-label">Szolgáltatás</span></div>
-            <div class="phase-sep"></div>
-            <div class="phase-step" data-phase="4"><span class="phase-dot"></span><span class="phase-label">NSE Scriptek</span></div>
-          </div>
-
-          <div class="terminal" id="nmapOutput">
-            <div class="terminal-welcome">
-              <pre class="ascii-art">
-  ╔╗╔╔╦╗╔═╗╔═╗
-  ║║║║║║╠═╣╠═╝
-  ╝╚╝╩ ╩╩ ╩╩</pre>
-              <p class="welcome-text" data-i18n="welcome.nmap.text">Network Mapper – hálózat feltérképező.</p>
-              <p class="welcome-hint"><span data-i18n="welcome.nmap.hint">Add meg a cél IP-t, válassz típust, majd kattints</span> <kbd data-i18n="welcome.btn">Indítás</kbd>-ra.</p>
-              <div id="nmapScanInfo" class="scan-info-panel"></div>
-            </div>
-          </div>
-          <div class="summary-bar" id="nmapSummary" style="display:none">
-            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('hosts')">
-              <span class="sum-value" id="nmapHosts">0</span>
-              <span class="sum-label" data-i18n="sum.hosts">Host online</span>
-            </div>
-            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('ports')">
-              <span class="sum-value" id="nmapPorts">0</span>
-              <span class="sum-label" data-i18n="sum.ports">Nyitott port</span>
-            </div>
-            <div class="summary-item summary-item-clickable" onclick="openSummaryModal('ips')">
-              <span class="sum-value" id="nmapIPs">0</span>
-              <span class="sum-label" data-i18n="sum.ips">Egyedi IP</span>
-            </div>
-            <div class="summary-item summary-item-clickable" id="nmapVulnItem" onclick="openSummaryModal('vuln')">
-              <span class="sum-value sum-value-danger" id="nmapVulns">0</span>
-              <span class="sum-label">Találat 🔍</span>
-            </div>
-            <div class="summary-item summary-item-clickable" id="nmapErrorItem" onclick="openSummaryModal('error')">
-              <span class="sum-value sum-value-warn" id="nmapErrors">0</span>
-              <span class="sum-label">Script hiba ⚠️</span>
-            </div>
-          </div>
-        </div>
-
-        <aside class="side-panel" id="nmapRightPanel">
-          <h2 class="panel-title" id="nmapRightTitle" data-i18n="nmap.right_panel.title">📋 Port Referencia</h2>
-
-          <div id="nmapHistory" class="history-list">
-            <div class="history-empty" data-i18n="nmap.history.empty">Még nincs scan előzmény.</div>
-          </div>
-
-          <hr class="panel-divider">
-
-          <!-- Részletes nézet: summary itemek tartalma -->
-          <div id="nmapDetailPane" style="display:none">
-            <div id="nmapDetailBody" class="detail-body"></div>
-            <button class="detail-back-btn" onclick="closeDetailPane()" data-i18n="nmap.modal.back">← Vissza a port referenciához</button>
-            <hr class="panel-divider">
-          </div>
-
-          <!-- Alap: port referencia -->
-          <div id="nmapPortRef">
-            <div data-i18n-html="nmap.info" style="margin: 1rem 1.1rem; font-size: 0.8rem; color: var(--text-dim); font-family: var(--ui); line-height: 1.5;">
-              <strong>Mi ez?</strong><br>
-              Az <code>nmap</code> (Network Mapper) megvizsgálja, hogy egy hálózaton milyen gépek és nyitott portok vannak. Segít megérteni, mit "lát" egy külső szemlélő a hálózatodról.
-            </div>
-
-            <hr class="panel-divider">
-
-            <div class="req-title" data-i18n="nmap.install.title">Telepítés</div>
-            <div class="req-item"><code>sudo apt install nmap</code> (Linux)</div>
-            <div class="req-item"><code>brew install nmap</code> (macOS)</div>
-
-            <hr class="panel-divider">
-
-            <div class="req-title">Általános portok</div>
-            <div class="req-item"><code>21</code> – FTP</div>
-            <div class="req-item"><code>22</code> – SSH</div>
-            <div class="req-item"><code>23</code> – Telnet</div>
-            <div class="req-item"><code>25</code> – SMTP</div>
-            <div class="req-item"><code>53</code> – DNS</div>
-            <div class="req-item"><code>80</code> – HTTP</div>
-            <div class="req-item"><code>110</code> – POP3</div>
-            <div class="req-item"><code>143</code> – IMAP</div>
-            <div class="req-item"><code>443</code> – HTTPS</div>
-            <div class="req-item"><code>445</code> – SMB ⚠️</div>
-            <div class="req-item"><code>3306</code> – MySQL</div>
-            <div class="req-item"><code>3389</code> – RDP ⚠️</div>
-            <div class="req-item"><code>5432</code> – PostgreSQL</div>
-            <div class="req-item"><code>6379</code> – Redis</div>
-            <div class="req-item"><code>8080</code> – HTTP alt</div>
-            <div class="req-item"><code>8443</code> – HTTPS alt</div>
-
-            <hr class="panel-divider">
-
-            <div class="req-title">Hasznos flagek</div>
-            <div class="req-item"><code>-sV</code> – verziódetektálás</div>
-            <div class="req-item"><code>-O</code> – OS detektálás*</div>
-            <div class="req-item"><code>-A</code> – összes info</div>
-            <div class="req-item"><code>-p-</code> – összes port</div>
-            <div class="req-item"><code>-T4</code> – gyors timing</div>
-            <div class="req-item"><code>-v</code> – verbose kimenet</div>
-            <div class="req-item"><code>-oN file</code> – mentés fájlba</div>
-
-            <hr class="panel-divider">
-
-            <div class="req-title">Célmegadás formátumok</div>
-            <div class="req-item"><code>192.168.1.1</code></div>
-            <div class="req-item"><code>192.168.1.0/24</code></div>
-            <div class="req-item"><code>192.168.1.1-50</code></div>
-            <div class="req-item"><code>scanme.nmap.org</code></div>
-          </div>
-        </aside>
-
-      </div>
-    </section>
-
-    <!-- ── ÚTMUTATÓ TAB ── -->
-    <section class="tab" id="tab-guide">
-      <div class="guide-container">
-        <h2 class="guide-title" data-i18n="guide.title">📖 Kezdők útmutatója</h2>
-        <div class="guide-grid">
-
-          <div class="guide-card">
-            <div class="guide-icon">🛡️</div>
-            <h3 data-i18n="guide.eth.title">Mi az etikus tesztelés?</h3>
-            <p data-i18n-html="guide.eth.body">Az etikus hacking azt jelenti, hogy <strong>saját engedélyeddel</strong> teszteled egy rendszer biztonságát.</p>
-            <div class="guide-rule" data-i18n-html="guide.eth.rule"><strong>Arany szabály:</strong> Csak saját rendszert tesztelj!</div>
-          </div>
-
-          <div class="guide-card">
-            <div class="guide-icon">⚖️</div>
-            <h3 data-i18n="guide.law.title">Jogi háttér (Magyarország)</h3>
-            <p data-i18n-html="guide.law.body">Magyarországon a Btk. 375-376. §-a szabályozza az informatikai bűncselekményeket.</p>
-            <div class="guide-rule safe" data-i18n-html="guide.law.rule"><strong>Biztonságos gyakorlás:</strong> Használj otthoni labort!</div>
-          </div>
-
-          <div class="guide-card">
-            <div class="guide-icon">📡</div>
-            <h3 data-i18n="guide.wifi.title">WiFi biztonsági szintek</h3>
-            <ul class="guide-list">
-              <li><span class="badge-danger">WEP</span> – Elavult, percek alatt törhető. <strong>Ne használd!</strong></li>
-              <li><span class="badge-warn">WPA</span> – Már elavult, sebezhető.</li>
-              <li><span class="badge-ok">WPA2</span> – Elterjedt, erős jelszóval biztonságos.</li>
-              <li><span class="badge-ok">WPA3</span> – Legújabb, legjobb védelem.</li>
-            </ul>
-            <p>A <code>wifite</code> ezek gyengeségeit teszteli.</p>
-          </div>
-
-          <div class="guide-card">
-            <div class="guide-icon">🔌</div>
-            <h3 data-i18n="guide.ports.title">Fontosabb portok</h3>
-            <ul class="guide-list">
-              <li><code>22</code> – SSH (biztonságos távelérés)</li>
-              <li><code>80</code> – HTTP (titkosítatlan web)</li>
-              <li><code>443</code> – HTTPS (titkosított web)</li>
-              <li><code>445</code> – SMB (Windows megosztás ⚠️)</li>
-              <li><code>3389</code> – RDP (Windows távoli asztal ⚠️)</li>
-            </ul>
-            <p>Az <code>nmap</code> megmutatja, melyik nyitott nálad.</p>
-          </div>
-
-          <div class="guide-card">
-            <div class="guide-icon">🚀</div>
-            <h3 data-i18n="guide.next.title">Következő lépések</h3>
-            <ul class="guide-list">
-              <li>🎯 <a href="https://tryhackme.com" target="_blank">TryHackMe</a> – interaktív oktatás</li>
-              <li>🏆 <a href="https://hackthebox.com" target="_blank">Hack The Box</a> – haladó kihívások</li>
-              <li>📚 <a href="https://owasp.org" target="_blank">OWASP</a> – webes biztonsági alap</li>
-              <li>🐧 Kali Linux – pentest disztribúció</li>
-              <li>📜 CEH / OSCP – elismert tanúsítványok</li>
-            </ul>
-          </div>
-
-          <div class="guide-card">
-            <div class="guide-icon">⚙️</div>
-            <h3 data-i18n="guide.install.title">Telepítési útmutató</h3>
-            <div class="code-block">
-              <div class="code-label">Ubuntu/Debian/Kali</div>
-              <code>sudo apt update<br>sudo apt install wifite nmap<br>sudo npm start</code>
-            </div>
-            <div class="code-block" style="margin-top:0.8rem">
-              <div class="code-label">macOS (Homebrew)</div>
-              <code>brew install nmap<br># wifite: limited on macOS<br>sudo npm start</code>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <div id="toastContainer"></div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/lang/hu.js"></script>
-  <script src="/lang/en.js"></script>
-  <script src="/lang/de.js"></script>
-  <script src="/lang/es.js"></script>
-  <script src="/lang/i18n.js"></script>
-  <script src="/app/app.js"></script>
-  <script src="/app/nmap.js"></script>
-  <script src="/app/wifite.js"></script>
+<script src="/socketio.js"></script>
+<script src="/lang/hu.js"></script>
+<script src="/lang/en.js"></script>
+<script src="/lang/de.js"></script>
+<script src="/lang/es.js"></script>
+<script src="/lang/i18n.js"></script>
+<script src="app/ethtest-console.js"></script>
 </body>
 </html>

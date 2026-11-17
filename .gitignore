@@ -1,6 +1,29 @@
-node_modules/
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# OS
 .DS_Store
+
+# Runtime data (generated at run time, not part of the source)
+uploads/
+wordlists/
 *.log
-npm-debug.log*
+
+# Captured / sensitive runtime output — never commit
+*.cap
+*.pcap
+*.pcapng
+*.hccapx
+*.hc22000
+
+# Environment
 .env
 .env.*
+
+# Internal notes (not for the public repo)
+HANDOFF.md
+README.orig.md

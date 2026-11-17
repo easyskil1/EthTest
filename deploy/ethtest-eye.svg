@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- szem feher (mandula) - tomor szinek, nincs gradiens -->
+  <path d="M6 64 Q64 12 122 64 Q64 116 6 64 Z" fill="#f3f6fa" stroke="#c20016" stroke-width="3.5"/>
+  <!-- irisz -->
+  <circle cx="64" cy="64" r="24" fill="#d1102e"/>
+  <circle cx="64" cy="64" r="24" fill="none" stroke="#ff5a5a" stroke-width="2"/>
+  <circle cx="64" cy="64" r="16" fill="#e8243f"/>
+  <!-- pupilla -->
+  <circle cx="64" cy="64" r="9.5" fill="#0a0a0a"/>
+  <!-- csillanas -->
+  <circle cx="58" cy="58" r="3.6" fill="#ffffff" opacity="0.95"/>
+</svg>

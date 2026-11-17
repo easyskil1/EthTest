@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=EthTest
+Comment=Webes pentest-toolkit (nmap + WiFi audit) a Kali konteneren at
+Exec=lxterminal --title=EthTest -e /home/proto/.local/bin/ethtest-run
+Icon=/home/proto/.local/share/icons/ethtest-eye.png
+Terminal=false
+Categories=System;Security;Network;

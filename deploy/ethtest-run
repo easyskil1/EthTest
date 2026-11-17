@@ -1,0 +1,64 @@
+#!/bin/bash
+# EthTest webes felulet a Kali (podman) konteneriben: python3 + flask.
+# Bongeszobol: http://localhost:3000 . Kilepeskor visszaallitja a Wi-Fit (mint a 'kali').
+# Csak sajat halozat / irasos engedely!
+
+cleanup() { sudo /usr/local/sbin/wifi-restore 2>/dev/null; }
+trap cleanup EXIT HUP
+
+if ! sudo podman image exists kali-uconsole; then
+  echo "A Kali kep (kali-uconsole) nincs kesz."
+  read -r -p "Enter a bezarashoz..." _; exit 1
+fi
+
+mkdir -p "$HOME/kali"
+
+# PERZISZTENS kontener: a telepitett eszkozok (apt) ujrainditas utan is megmaradnak.
+# NINCS --rm es NINCS elozetes 'rm' -> a kontener irhato retege megmarad.
+# Teljes alaphelyzet (ha kell): sudo podman rm -f ethtest
+CNAME=ethtest
+run_fresh() {
+  sudo podman run -it --name "$CNAME" --hostname kali \
+    --privileged --net=host --pid=host \
+    -v /dev:/dev -v /lib/modules:/lib/modules:ro \
+    -v "$HOME/kali":/root/work \
+    -v /usr/local/share/wifiaudit:/usr/local/bin/wifiaudit:ro \
+    kali-uconsole \
+    bash -lc 'cd /root/work/ethtest && PYTHONPATH=/root/work/pylibs WORDLIST_DIR=/root/work/wordlists WIFI_IFACE=wlan1 python3 app.py'
+}
+
+# Amint a szerver valaszol, nyissuk meg APP-MODBAN (bongeszokeret nelkul)
+(
+  for i in $(seq 1 40); do
+    if curl -fsS -o /dev/null http://localhost:3000 2>/dev/null; then
+      BR="$(command -v chromium || command -v chromium-browser || true)"
+      if [ -n "$BR" ]; then
+        # friss betoltes: regi bongeszo-cache torlese (ne szolgaljon ki regi feluletet)
+        rm -rf "$HOME/.config/ethtest-chromium/Default/Cache" "$HOME/.config/ethtest-chromium/Default/Code Cache" "$HOME/.config/ethtest-chromium/Default/GPUCache" 2>/dev/null
+        "$BR" --kiosk --start-fullscreen --disable-features=Translate \
+              --class=EthTest --user-data-dir="$HOME/.config/ethtest-chromium" \
+              http://localhost:3000 >/dev/null 2>&1 &
+      elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open http://localhost:3000 >/dev/null 2>&1
+      fi
+      break
+    fi
+    sleep 1
+  done
+) &
+
+echo "[*] EthTest indul a Kaliban -> http://localhost:3000 (webes felulet)"
+echo "[*] Leallitas: Ctrl+C vagy az ablak bezarasa (utana a Wi-Fi visszaall)."
+echo
+if sudo podman container exists "$CNAME"; then
+  echo "[*] Perzisztens kontener ujrainditasa (telepitett eszkozok megmaradnak)."
+  sudo podman start -ai "$CNAME" || {
+    echo "[!] Start sikertelen -> ujraepites tiszta kontenerbol."
+    sudo podman rm -f "$CNAME" >/dev/null 2>&1
+    run_fresh
+  }
+else
+  echo "[*] Elso inditas: perzisztens kontener letrehozasa."
+  run_fresh
+fi
+# a trap (cleanup) itt automatikusan lefut

@@ -4,6 +4,12 @@ const hu = {
   'nav.wifi':  'WiFi Audit',
   'nav.nmap':  'Nmap Scan',
   'nav.guide': '📖 Útmutató',
+  'nav.vedelem': '🛡️ Védelem',
+  'nav.pentest': 'PenTest',
+  'nav.naplo': '📓 Napló',
+  'nav.rendszer': '📊 Rendszer',
+  'close.title': 'Bezárás (böngésző + szerver)',
+  'close.confirm': 'Biztosan bezárod? A böngésző és a szerver is leáll, a Wi-Fi visszaáll.',
 
   // --- SIDEBAR NAV ---
   'home.nav.guide': '0. Kezdő lépések',
@@ -236,6 +242,7 @@ const hu = {
   'welcome.nmap.hint':   'Add meg a cél IP-t, válassz típust, majd kattints',
   'welcome.btn':         'Indítás',
   'toast.wifite.start':   'Wifite elindítva...',
+  'toast.wifite.ctrlc': 'Keresés leállítása — célpontlista betöltése…',
   'toast.wifite.done':    'Wifite szkennelés kész!',
   'toast.wifite.stop':    'Wifite leállítva',
   'toast.wifite.err':     'Hiba a wifite indításánál',
