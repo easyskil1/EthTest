@@ -450,7 +450,7 @@ VIEWS.bt=()=>`
   ${intro('bt','Bluetooth / BLE felderítés. Belső vagy USB Bluetooth-adapter kell (Linux). Csak saját vagy engedélyezett eszközökön!','warn')}
   <div class="tbar"><label class="ck">időtartam <select id="btDur"><option>8</option><option>15</option><option>30</option></select> mp</label><button class="btn sm pri" id="btScanBtn" data-act="btScan">${svg(GL.search,2)} Keresés</button><span class="grow"></span><span id="btStatus" class="muted"></span></div>
   <div id="btList"><div class="dempty">Indítsd a keresést a közeli BT/BLE eszközökhöz.</div></div>`;
-MOUNT.bt=()=>btStatusLoad();
+MOUNT.bt=()=>{btStatusLoad();modStatusLoad();};
 async function btStatusLoad(){const s=$('#btStatus');try{const d=await fetch('/api/bt/status').then(r=>r.json());if(s)s.textContent=d.available?((d.adapters&&d.adapters[0]&&(d.adapters[0].name||d.adapters[0].mac))||'adapter OK'):'nincs adapter';if(!d.available){const l=$('#btList');if(l)l.innerHTML='<div class="dempty">'+esc(d.message||'Bluetooth nem elérhető (Linux + adapter kell).')+'</div>';const b=$('#btScanBtn');if(b)b.disabled=true;}}catch(e){if(s)s.textContent='—';}}
 
 /* ── WEBAPP-vizsgálat (whatweb / nikto / sqlmap) ── */
@@ -478,7 +478,7 @@ VIEWS.android=()=>`
     <button class="scan-btn" data-act="adbAction" data-k="logcat"><span class="si">≡</span><b>Logcat</b><small>utolsó 200 sor</small></button>
   </div>
   <div class="grow1"><div class="console"><div class="cons-hd">Android terminál<span class="ch-r"><span class="ttimer" id="androidOutTimer" style="display:none"></span><span class="tcount">0 sor</span><button class="cbtn" data-act="adbClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="androidOut" placeholder="szűrés…"></span></div><div class="term" id="androidOut" tabindex="0"><div class="t-welcome">Válassz eszközt és műveletet. A kimenet itt folyik.</div></div></div></div>`;
-MOUNT.android=()=>adbLoad();
+MOUNT.android=()=>{adbLoad();modStatusLoad();};
 async function adbLoad(){const s=$('#adbStatus');try{const d=await fetch('/api/android/devices').then(r=>r.json());AND.avail=!!d.available;AND.devices=d.devices||[];if(AND.devices.length&&!AND.devices.some(x=>x.serial===AND.serial))AND.serial=AND.devices[0].serial;if(s)s.textContent=d.available?(AND.devices.length?AND.devices.length+' eszköz':'nincs eszköz'):'adb nincs telepítve';adbDevsRender();if(!d.available){const dd=$('#adbDevs');if(dd)dd.innerHTML='<div class="dempty">'+esc(d.message||'Az adb nincs telepítve (platform-tools).')+'</div>';}}catch(e){if(s)s.textContent='—';}}
 function adbDevsRender(){const c=$('#adbDevs');if(!c)return;if(!AND.avail)return;c.innerHTML=AND.devices.length?AND.devices.map(x=>`<button class="scan-btn ${AND.serial===x.serial?'on':''}" data-act="adbPick" data-k="${esc(x.serial)}"><span class="si">${x.state==='device'?'●':'○'}</span><b>${esc(x.model||x.serial)}</b><small>${esc(x.serial)} · ${esc(x.state)}</small></button>`).join(''):'<div class="dempty">Nincs csatlakoztatott eszköz. Kösd USB-re és engedélyezd a hibakeresést.</div>';}
 
@@ -490,7 +490,7 @@ VIEWS.radio=()=>`
   <div class="scan-cat" style="padding:6px 2px 2px">Művelet</div>
   <div id="radTools" class="scan-grid"><div class="dempty">Betöltés…</div></div>
   <div class="grow1"><div class="console"><div class="cons-hd">RFID / SDR terminál<span class="ch-r"><span class="ttimer" id="radioOutTimer" style="display:none"></span><span class="tcount">0 sor</span><button class="cbtn" data-act="radioClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="radioOut" placeholder="szűrés…"></span></div><div class="term" id="radioOut" tabindex="0"><div class="t-welcome">Válassz műveletet (NFC/SDR). A kimenet itt folyik.</div></div></div></div>`;
-MOUNT.radio=()=>radioLoad();
+MOUNT.radio=()=>{radioLoad();modStatusLoad();};
 async function radioLoad(){const s=$('#radStatus');try{const d=await fetch('/api/radio/status').then(r=>r.json());RAD.tools=d.tools||[];RAD.extra=d.extra||{};const ex=Object.keys(RAD.extra).filter(k=>RAD.extra[k]);if(s)s.textContent=ex.length?('extra: '+ex.join(', ')):'';radToolsRender();}catch(e){if(s)s.textContent='—';}}
 function radToolsRender(){const c=$('#radTools');if(!c)return;c.innerHTML=RAD.tools.length?RAD.tools.map(t=>`<button class="scan-btn" data-act="radioScan" data-k="${esc(t.key)}"><span class="si">${t.installed?'●':'○'}</span><b>${esc(t.label)}</b><small>${t.installed?'kész':'nincs eszköz/tool'} · ${esc(t.hint)}</small></button>`).join(''):'<div class="dempty">Nincs elérhető eszköz.</div>';}
 
@@ -597,7 +597,7 @@ const RAIL=[{id:'ctx',label:'Nézet',glyph:'grid'},{id:'ext',label:'Bővítm.',g
 function railAvail(id){
   if(id==='flow')return !!FLOW[curView];
   if(id==='ctx')return ['nmap','wifite','vedelem','update'].includes(curView);
-  if(id==='ext')return ['nmap','wifite','pentest','vedelem','update'].includes(curView);
+  if(id==='ext')return ['nmap','wifite','pentest','vedelem','update','bt','android','radio'].includes(curView);
   if(id==='desc')return !!DESC[curView];
   if(id==='export')return !!TERMID[curView];
   if(id==='hist')return !!CMDID[curView];
@@ -690,8 +690,24 @@ const DRAWER={
       <h5>Gyakori portok</h5><table class="logt"><tbody>${ports.map(p=>`<tr><td class="t mono">${p[0]}</td><td>${p[1]}</td></tr>`).join('')}</tbody></table>
       <h5>Keresők</h5><p><a href="https://nvd.nist.gov/vuln/search" target="_blank" rel="noopener">NVD CVE-kereső ↗</a><br><a href="https://www.exploit-db.com/" target="_blank" rel="noopener">Exploit-DB ↗</a></p>
       <h5>Puska</h5><p><code>nmap -sV -sC -O &lt;cél&gt;</code> — alap audit<br><code>nmap --script vuln &lt;cél&gt;</code> — sebezhetőség<br><code>nikto -h &lt;url&gt;</code> — web</p></div>`;},
-  ext(){return curView==='vedelem'?defExtHtml():curView==='update'?updExtHtml():ptExtHtml();},
+  ext(){if(['bt','android','radio'].includes(curView))return modExtHtml();return curView==='vedelem'?defExtHtml():curView==='update'?updExtHtml():ptExtHtml();},
 };
+
+/* ── Modul-tool telepítő a Bővítmények (ext) panelen (bt/android/radio) ── */
+const MODTOOLS={
+  bt:[{key:'bt',name:'bluez (bluetoothctl)',pkg:'bluez',hw:'BT-adapter'}],
+  android:[{key:'android',name:'adb (platform-tools)',pkg:'adb',hw:'csatlakoztatott telefon'}],
+  radio:[{key:'nfc',name:'libnfc (nfc-list)',pkg:'libnfc-bin',hw:'NFC-olvasó (PN532/ACR122)'},
+         {key:'sdr',name:'rtl-433 + rtl-sdr',pkg:'rtl-433 rtl-sdr',hw:'RTL-SDR dongle'}],
+};
+let MODST={};
+async function modStatusLoad(){try{MODST=await fetch('/api/module/status').then(r=>r.json());}catch(e){MODST={};}}
+function modExtHtml(){const specs=MODTOOLS[curView]||[];
+  return `<div class="dtool"><span class="muted" style="font-size:11px;flex:1">Telepítés a Kali-konténerbe — kattints a „Telepít"-re</span><button class="btn sm" data-act="modToolsRefresh">${svg(GL.refresh,2)}</button></div>`
+   +specs.map(s=>{const inst=!!MODST[s.key];
+     return `<div class="hist"><span class="hb ${inst?'done':''}">${inst?'✓':'⬇'}</span><span class="ht"><b>${esc(s.name)}</b> — <span class="muted">${esc(s.pkg)}</span></span>${inst?'<span class="hm">telepítve</span>':`<button class="btn sm pri" data-act="modInstall" data-k="${esc(s.key)}">${svg(GL.dl,2)} Telepít</button>`}</div>`;}).join('')
+   +`<div class="scan-cat" style="padding:6px 10px 2px">Telepítő kimenet</div><div class="term" id="modInstallOut" style="min-height:120px;margin:0 6px"><div class="t-welcome">A „Telepít" gombra indul; a kimenet itt folyik.</div></div>`
+   +(specs.some(s=>s.hw)?`<p class="muted" style="font-size:11px;padding:6px 10px">A tool telepítése után a modul működéséhez a hardver is kell: ${esc(specs.map(s=>s.hw).filter(Boolean).join(', '))}.</p>`:'');}
 
 /* ═══════════════ MŰVELETEK ═══════════════ */
 const ACT={
@@ -732,6 +748,8 @@ const ACT={
   async radioScan(b){const kind=b.dataset.k;const t=RAD.tools.find(x=>x.key===kind);if(t&&!t.installed)toast('Ehhez hardver/tool kell','warning');renderLine({raw:'$ '+kind+' felderítés…',type:'action'},'radioOut');try{const d=await fetch('/api/radio/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind})}).then(r=>r.json());if(d&&d.error){toast(d.error,'error');renderLine({raw:'[!] '+d.error,type:'error'},'radioOut');}}catch(e){toast('Hálózati hiba','error');}},
   radioStop(){fetch('/api/radio/stop',{method:'POST'}).catch(()=>{});},
   radioClear(){termClear('radioOut');},
+  modToolsRefresh(){modStatusLoad().then(()=>{if(curTool==='ext')renderDrawer();});},
+  async modInstall(b){const key=b.dataset.k;b.disabled=true;const o=$('#modInstallOut');if(o){o.innerHTML='';}renderLine({raw:'[*] Telepítés indul: '+key+' …',type:'action'},'modInstallOut');toast('Telepítés indul (konténerbe)…','info');try{const d=await fetch('/api/module/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module:key})}).then(r=>r.json());if(d&&d.error){toast(d.message||d.error,'error');renderLine({raw:'[!] '+(d.message||d.error),type:'error'},'modInstallOut');b.disabled=false;}}catch(e){toast('Hálózati hiba','error');b.disabled=false;}},
   async btScan(b){const l=$('#btList');const dur=($('#btDur')&&$('#btDur').value)||8;if(l)l.innerHTML='<div class="dempty">Keresés… (~'+dur+' mp, ne zárd be)</div>';if(b)b.disabled=true;try{const d=await fetch('/api/bt/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:+dur})}).then(r=>r.json());if(d.error){l.innerHTML='<div class="dempty">'+esc(d.message||'Nem elérhető.')+'</div>';}else{const ds=d.devices||[];l.innerHTML=ds.length?ds.map(x=>`<div class="hsitem">${L('b')}<span class="hn" title="${esc(x.mac)}">${esc(x.name||'(névtelen)')}</span><span class="muted">${esc(x.mac)}</span></div>`).join(''):'<div class="dempty">Nem találtam eszközt a közelben.</div>';applog('b','BT keresés: '+ds.length+' eszköz');}}catch(e){l.innerHTML='<div class="dempty">Hálózati hiba.</div>';}if(b)b.disabled=false;},
   wifiteNaplo(){const s=STATE.wifite;const sum=`Összesítés: ${s.networks} hálózat, ${s.handshakes} handshake/PMKID, ${s.cracked} feltört.`;saveToNaplo('wifi','WiFi audit — '+tDate(Date.now()),sum+'\n\n'+termText('wifiteOut'));},
   /* védelem */
@@ -905,6 +923,10 @@ try{socket=io();
   socket.on('radio:output',d=>renderLine(d,'radioOut'));
   socket.on('radio:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'radioOut');say('RFID/SDR hiba','r');timerStop('radioOut');});
   socket.on('radio:done',({code,stopped})=>{timerStop('radioOut');say(stopped?'Leállítva':(code===0?'Kész':'Vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
+  /* modul-tool telepítő */
+  socket.on('module:start',({module})=>{say('Telepítés: '+module,'b');});
+  socket.on('module:output',({line})=>renderLine({raw:line,type:'out'},'modInstallOut'));
+  socket.on('module:done',({module,code})=>{say(code===0?('Telepítve: '+module):('Telepítés hibával: '+module),code===0?'g':'r');renderLine({raw:code===0?'[+] Kész — a modul mostantól aktív (ha a hardver is megvan).':'[!] A telepítés hibával zárult ('+code+').',type:code===0?'action':'error'},'modInstallOut');modStatusLoad().then(()=>{const btn=document.querySelector('[data-act="modInstall"][data-k="'+module+'"]');if(btn){if(code===0){const row=btn.closest('.hist');if(row){const hb=row.querySelector('.hb');if(hb){hb.textContent='✓';hb.classList.add('done');}btn.outerHTML='<span class="hm">telepítve</span>';}}else{btn.disabled=false;}}});});
   /* nmap */
   socket.on('nmap:start',({target,scanType,useSudo})=>{STATE.nmap={running:true,meta:{target,scanType}};_nmHostMap={};_nmHostCur=null;NMDATA={hosts:[],ports:[],ips:[],vuln:[],error:[]};
     termClear('nmapOut');$('#nmTiles')&&($('#nmTiles').style.display='none');const pb=$('#nmPhases');if(pb){pb.style.display='';$$('.phstep').forEach(x=>x.classList.remove('done','active'));}nmPhase(1);timerStart('nmapOut');say('Nmap indul: '+target+' ('+scanType+')','b');

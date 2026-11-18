@@ -1257,6 +1257,57 @@ def radio_stop():
     return jsonify(status="not_running")
 
 
+# ─── Modul-toolok telepítése a Kali-konténerbe (Bővítmények panel) ───
+MODULE_PKG = {
+    "bt": "bluez",
+    "android": "adb",
+    "nfc": "libnfc-bin",
+    "sdr": "rtl-433 rtl-sdr",
+}
+MODULE_BIN = {"bt": "bluetoothctl", "android": "adb", "nfc": "nfc-list", "sdr": "rtl_433"}
+
+
+@app.route("/api/module/status")
+def module_status():
+    import shutil
+    return jsonify({k: bool(shutil.which(b)) for k, b in MODULE_BIN.items()})
+
+
+@app.route("/api/module/install", methods=["POST"])
+def module_install():
+    body = request.get_json(force=True, silent=True) or {}
+    mod = body.get("module", "")
+    if mod not in MODULE_PKG:
+        return jsonify(error="ismeretlen modul"), 400
+    if active.get("mod_install") and active["mod_install"].poll() is None:
+        return jsonify(error="busy", message="Egy telepítés már fut."), 409
+    pkg = MODULE_PKG[mod]
+
+    def worker():
+        socketio.emit("module:start", {"module": mod})
+        socketio.emit("module:output", {"module": mod, "line": f"$ apt-get install -y {pkg}  (Kali konténer)"})
+        cmd = ("export DEBIAN_FRONTEND=noninteractive; "
+               "echo '[*] apt-get update (csomaglista)...'; apt-get update -qq 2>&1 | tail -3; "
+               f"echo '[*] apt-get install {pkg}...'; apt-get install -y {pkg} 2>&1")
+        try:
+            proc = subprocess.Popen([BASH_PATH, "-lc", cmd], stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, text=True, bufsize=1)
+        except Exception as e:
+            socketio.emit("module:output", {"module": mod, "line": f"[!] Hiba: {e}"})
+            socketio.emit("module:done", {"module": mod, "code": -1})
+            return
+        active["mod_install"] = proc
+        for line in proc.stdout:
+            if line.strip():
+                socketio.emit("module:output", {"module": mod, "line": line.rstrip("\n")})
+        code = proc.wait()
+        active.pop("mod_install", None)
+        socketio.emit("module:output", {"module": mod, "line": f"[telepítés kész, kód={code}]"})
+        socketio.emit("module:done", {"module": mod, "code": code})
+    socketio.start_background_task(worker)
+    return jsonify(status="started")
+
+
 # ─── Socket.IO: pentest run/kill ─────────────────────────────────────
 @socketio.on("pentest:run")
 def on_pt_run(data):
