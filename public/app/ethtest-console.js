@@ -37,6 +37,10 @@ const GL={
   check:'<path d="M5 12l5 5 9-10"/>', undo:'<path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-2"/>', folder:'<path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>',
   history:'<path d="M3.2 12a9 9 0 1 0 2.6-6.4M3 5v4h4"/><path d="M12 8v4.5l3 1.8"/>',
   puzzle:'<path d="M10 3h4a1 1 0 011 1v2a2 2 0 104 0h2a1 1 0 011 1v4a2 2 0 100 4v2a1 1 0 01-1 1h-4a2 2 0 10-4 0H5a1 1 0 01-1-1v-4a2 2 0 100-4V4a1 1 0 011-1h3a2 2 0 104 0z"/>',
+  bt:'<path d="M12 4v16M12 4l5 4-10 8M12 20l5-4-10-8"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>',
+  phone:'<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
+  radio:'<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 000 8.4M16.2 7.8a6 6 0 010 8.4M5 5a10 10 0 000 14M19 5a10 10 0 010 14"/>',
 };
 const L=c=>`<span class="led ${c}"></span>`;
 const S=(c,t)=>`<span class="st ${c}">${c==='o'?'':L(c)}${t}</span>`;
@@ -96,7 +100,9 @@ window.toast=toast;window.renderLine=renderLine;window.say=say;
 const TREE=[
   {id:'overview',label:'Áttekintés',glyph:'grid'},
   {folder:'Teszt / Audit',glyph:'radar',open:true,children:[
-    {id:'wifite',label:'WiFi Audit',glyph:'wifi'},{id:'nmap',label:'Nmap Scan',glyph:'radar'},{id:'pentest',label:'PenTest',glyph:'bug'}]},
+    {id:'wifite',label:'WiFi Audit',glyph:'wifi'},{id:'bt',label:'Bluetooth / BLE',glyph:'bt'},{id:'nmap',label:'Nmap Scan',glyph:'radar'},{id:'webapp',label:'Webapp',glyph:'globe'},{id:'android',label:'Android / mobil',glyph:'phone'},{id:'radio',label:'RFID / SDR',glyph:'radio'},{id:'pentest',label:'PenTest',glyph:'bug'}]},
+  {folder:'Eredmények',glyph:'list',open:true,children:[
+    {id:'handshakes',label:'Handshake-ek',glyph:'check'},{id:'findings',label:'Találatok',glyph:'search'}]},
   {folder:'Védelem',glyph:'shield',open:true,children:[
     {id:'vedelem',label:'Védelmi eszközök',glyph:'shield'}]},
   {folder:'Dokumentáció',glyph:'book',open:true,children:[
@@ -106,9 +112,9 @@ const TREE=[
   {id:'update',label:'Frissítés',glyph:'dl'},
   {id:'settings',label:'Beállítások',glyph:'gear'},
 ];
-const TITLE={overview:'Áttekintés',wifite:'WiFi Audit',nmap:'Nmap Scan',pentest:'PenTest',vedelem:'Védelmi eszközök',kb:'Tudásbázis',naplo:'Napló',rendszer:'Rendszer-állapot',update:'Frissítés',settings:'Beállítások'};
-const PATH={overview:'Munkaterület',wifite:'Teszt / Audit',nmap:'Teszt / Audit',pentest:'Teszt / Audit',vedelem:'Védelem',kb:'Dokumentáció',naplo:'Dokumentáció',rendszer:'Rendszer',update:'Rendszer',settings:'Rendszer'};
-const GLYPH={overview:'grid',wifite:'wifi',nmap:'radar',pentest:'bug',vedelem:'shield',kb:'book',naplo:'note',rendszer:'chip',update:'dl',settings:'gear'};
+const TITLE={overview:'Áttekintés',wifite:'WiFi Audit',bt:'Bluetooth / BLE',nmap:'Nmap Scan',webapp:'Webapp',android:'Android / mobil',radio:'RFID / SDR',pentest:'PenTest',handshakes:'Handshake-ek',findings:'Találatok',vedelem:'Védelmi eszközök',kb:'Tudásbázis',naplo:'Napló',rendszer:'Rendszer-állapot',update:'Frissítés',settings:'Beállítások'};
+const PATH={overview:'Munkaterület',wifite:'Teszt / Audit',bt:'Teszt / Audit',nmap:'Teszt / Audit',webapp:'Teszt / Audit',android:'Teszt / Audit',radio:'Teszt / Audit',pentest:'Teszt / Audit',handshakes:'Eredmények',findings:'Eredmények',vedelem:'Védelem',kb:'Dokumentáció',naplo:'Dokumentáció',rendszer:'Rendszer',update:'Rendszer',settings:'Rendszer'};
+const GLYPH={overview:'grid',wifite:'wifi',bt:'bt',nmap:'radar',webapp:'globe',android:'phone',radio:'radio',pentest:'bug',handshakes:'check',findings:'search',vedelem:'shield',kb:'book',naplo:'note',rendszer:'chip',update:'dl',settings:'gear'};
 function buildTree(){
   const tl=$('#treeList');tl.innerHTML='';
   const node=(n,lvl)=>{const t=el('div','tnode lvl'+lvl);t.dataset.go=n.id;t.tabIndex=0;
@@ -151,6 +157,9 @@ function renderAppbar(id){
   const sets={
     overview:[['refresh','Frissítés','','cmd:refresh']],
     nmap:[['play','Indít','pri','act:nmapRun'],['stop','Leállít','','act:nmapStop']],
+    webapp:[['play','Futtat','pri','act:waRun'],['stop','Leállít','','act:waStop']],
+    android:[['stop','Leállít','','act:adbStop']],
+    radio:[['stop','Leállít','','act:radioStop']],
     wifite:[['undo','Keresés stop','','act:wifiteCtrlC'],['play','Indít','pri','act:wifiteGo'],['stop','Leállít','','act:wifiteStop']],
     pentest:[['play','Indít','pri','act:ptRunLine'],['stop','Leállít','','act:ptKill']],
     vedelem:[['play','Indít','pri','act:vedStart'],['stop','Leállít','','act:defStop']],
@@ -420,6 +429,71 @@ function updExtHtml(){return `<div class="dtool"><span class="muted" style="font
   <div class="btnrow" style="margin:8px 10px 0"><button class="btn sm dng" id="updStop" data-act="updStop" disabled>${svg(GL.stop,2)} Leállít</button></div>
   <p class="muted" style="font-size:11px;padding:6px 10px">A frissítés hosszú lehet — ne zárd be közben. A kimenet a terminálon.</p>`;}
 
+/* ── EREDMÉNYEK: Handshake-ek ── */
+VIEWS.handshakes=()=>`
+  ${intro('check','Elkapott handshake-ek és PMKID-k a WiFi Audit futásokból. Innen letölthetők (.cap / .22000 / .pmkid). Csak saját vagy engedélyezett hálózat!','warn')}
+  <div class="tbar"><button class="btn sm" data-act="hsLoad">${svg(GL.refresh,2)} Frissít</button><span class="grow"></span><span id="hsCount" class="muted"></span></div>
+  <div id="hsvList"><div class="dempty">Betöltés…</div></div>`;
+MOUNT.handshakes=()=>hsViewLoad();
+async function hsViewLoad(){const list=$('#hsvList');if(!list)return;try{const items=await fetch('/api/wifite/handshakes').then(r=>r.json());const c=$('#hsCount');if(c)c.textContent=items.length?items.length+' db':'';list.innerHTML=items.length?items.map(h=>`<div class="hsitem">${L('g')}<span class="hn" title="${esc(h.name)}">${esc(h.name)}</span><span class="muted">${esc(h.size||'')}</span><a class="lnk" href="/api/wifite/handshake?name=${encodeURIComponent(h.name)}" download>letölt</a></div>`).join(''):'<div class="dempty">Még nincs elkapott handshake. Indíts egy WiFi Audit futást.</div>';}catch(e){list.innerHTML='<div class="dempty">Nem elérhető.</div>';}}
+
+/* ── EREDMÉNYEK: Találatok (aggregált findings) ── */
+VIEWS.findings=()=>`
+  ${intro('search','Összegyűjtött találatok a PenTest-futásokból (sebezhetőségek, CVE-k). A szkriptek a /tmp-be írják; itt egy helyen látod.','warn')}
+  <div class="tbar"><button class="btn sm" data-act="fndLoad">${svg(GL.refresh,2)} Frissít</button><span class="grow"></span><span id="fndCount" class="muted"></span></div>
+  <div id="fndvList"><div class="dempty">Betöltés…</div></div>`;
+MOUNT.findings=()=>fndViewLoad();
+async function fndViewLoad(){const b=$('#fndvList');if(!b)return;try{const items=await fetch('/api/findings').then(r=>r.json());const c=$('#fndCount');if(c)c.textContent=items.length?items.length+' forrás':'';b.innerHTML=items.length?items.map(f=>`<div class="defcard"><div class="defhead"><span class="dn">${esc(f.script||f.name)}</span><span class="dtag">t${esc(String(f.t||''))}</span></div><div class="defdesc mono" style="display:block">${(f.lines||[]).map(l=>esc(l)).join('<br>')||'(üres)'}</div></div>`).join(''):'<div class="dempty">Nincs találat. Futtass PenTest szkriptet, amely /tmp-be ír findings-ot.</div>';}catch(e){b.innerHTML='<div class="dempty">Nem elérhető.</div>';}}
+
+/* ── BLUETOOTH / BLE felderítés ── */
+VIEWS.bt=()=>`
+  ${intro('bt','Bluetooth / BLE felderítés. Belső vagy USB Bluetooth-adapter kell (Linux). Csak saját vagy engedélyezett eszközökön!','warn')}
+  <div class="tbar"><label class="ck">időtartam <select id="btDur"><option>8</option><option>15</option><option>30</option></select> mp</label><button class="btn sm pri" id="btScanBtn" data-act="btScan">${svg(GL.search,2)} Keresés</button><span class="grow"></span><span id="btStatus" class="muted"></span></div>
+  <div id="btList"><div class="dempty">Indítsd a keresést a közeli BT/BLE eszközökhöz.</div></div>`;
+MOUNT.bt=()=>btStatusLoad();
+async function btStatusLoad(){const s=$('#btStatus');try{const d=await fetch('/api/bt/status').then(r=>r.json());if(s)s.textContent=d.available?((d.adapters&&d.adapters[0]&&(d.adapters[0].name||d.adapters[0].mac))||'adapter OK'):'nincs adapter';if(!d.available){const l=$('#btList');if(l)l.innerHTML='<div class="dempty">'+esc(d.message||'Bluetooth nem elérhető (Linux + adapter kell).')+'</div>';const b=$('#btScanBtn');if(b)b.disabled=true;}}catch(e){if(s)s.textContent='—';}}
+
+/* ── WEBAPP-vizsgálat (whatweb / nikto / sqlmap) ── */
+let WA={tool:'whatweb',tools:[]};
+VIEWS.webapp=()=>`
+  ${intro('globe','Webalkalmazás-vizsgálat: ujjlenyomat (WhatWeb), sérülékenység-szken (Nikto), SQLi-teszt (sqlmap). Csak saját vagy írásosan engedélyezett célponton!','warn')}
+  <div class="scan-cat" style="padding:6px 2px 2px">Eszköz</div>
+  <div id="waTools" class="scan-grid"><div class="dempty">Betöltés…</div></div>
+  <div class="grow1">${consoleBox('webappOut','Webapp terminál','cél URL (https://… vagy host) — Enter futtat','waRun','Futtat','waStop',[{act:'waClear',g:'trash',label:'Törlés'}],'Válassz eszközt fent, írd a cél URL-t a parancssorba, majd Futtat/Enter. A kimenet itt folyik. sqlmap: csak engedélyezett célon!')}</div>`;
+MOUNT.webapp=()=>waToolsLoad();
+async function waToolsLoad(){try{WA.tools=await fetch('/api/webapp/tools').then(r=>r.json());}catch(e){WA.tools=[];}if(WA.tools.length&&!WA.tools.some(t=>t.key===WA.tool))WA.tool=WA.tools[0].key;waToolsRender();}
+function waToolsRender(){const c=$('#waTools');if(!c)return;c.innerHTML=WA.tools.length?WA.tools.map(t=>`<button class="scan-btn ${WA.tool===t.key?'on':''}" data-act="waPick" data-k="${esc(t.key)}"><span class="si">${t.installed?'●':'○'}</span><b>${esc(t.label)}</b><small>${t.installed?'telepítve':'nincs telepítve'}</small></button>`).join(''):'<div class="dempty">Nincs elérhető eszköz.</div>';}
+
+/* ── ANDROID / mobil (ADB) ── */
+let AND={serial:null,devices:[],avail:false};
+VIEWS.android=()=>`
+  ${intro('phone','Android/mobil vizsgálat ADB-n át: eszköz-infó, telepített csomagok, logcat. A telefonon kapcsold be az USB-hibakeresést. Csak saját vagy engedélyezett eszköz!','warn')}
+  <div class="tbar"><button class="btn sm" data-act="adbRefresh">${svg(GL.refresh,2)} Eszközök</button><span class="grow"></span><span id="adbStatus" class="muted"></span></div>
+  <div class="scan-cat" style="padding:6px 2px 2px">Eszköz</div>
+  <div id="adbDevs" class="scan-grid"><div class="dempty">Betöltés…</div></div>
+  <div class="scan-cat" style="padding:6px 2px 2px">Művelet</div>
+  <div class="scan-grid">
+    <button class="scan-btn" data-act="adbAction" data-k="info"><span class="si">ℹ︎</span><b>Eszköz-infó</b><small>getprop kulcsadatok</small></button>
+    <button class="scan-btn" data-act="adbAction" data-k="packages"><span class="si">▦</span><b>Csomagok</b><small>telepített appok (3rd-party)</small></button>
+    <button class="scan-btn" data-act="adbAction" data-k="logcat"><span class="si">≡</span><b>Logcat</b><small>utolsó 200 sor</small></button>
+  </div>
+  <div class="grow1"><div class="console"><div class="cons-hd">Android terminál<span class="ch-r"><span class="ttimer" id="androidOutTimer" style="display:none"></span><span class="tcount">0 sor</span><button class="cbtn" data-act="adbClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="androidOut" placeholder="szűrés…"></span></div><div class="term" id="androidOut" tabindex="0"><div class="t-welcome">Válassz eszközt és műveletet. A kimenet itt folyik.</div></div></div></div>`;
+MOUNT.android=()=>adbLoad();
+async function adbLoad(){const s=$('#adbStatus');try{const d=await fetch('/api/android/devices').then(r=>r.json());AND.avail=!!d.available;AND.devices=d.devices||[];if(AND.devices.length&&!AND.devices.some(x=>x.serial===AND.serial))AND.serial=AND.devices[0].serial;if(s)s.textContent=d.available?(AND.devices.length?AND.devices.length+' eszköz':'nincs eszköz'):'adb nincs telepítve';adbDevsRender();if(!d.available){const dd=$('#adbDevs');if(dd)dd.innerHTML='<div class="dempty">'+esc(d.message||'Az adb nincs telepítve (platform-tools).')+'</div>';}}catch(e){if(s)s.textContent='—';}}
+function adbDevsRender(){const c=$('#adbDevs');if(!c)return;if(!AND.avail)return;c.innerHTML=AND.devices.length?AND.devices.map(x=>`<button class="scan-btn ${AND.serial===x.serial?'on':''}" data-act="adbPick" data-k="${esc(x.serial)}"><span class="si">${x.state==='device'?'●':'○'}</span><b>${esc(x.model||x.serial)}</b><small>${esc(x.serial)} · ${esc(x.state)}</small></button>`).join(''):'<div class="dempty">Nincs csatlakoztatott eszköz. Kösd USB-re és engedélyezd a hibakeresést.</div>';}
+
+/* ── RFID-NFC / SDR (rádió) ── */
+let RAD={tools:[],extra:{}};
+VIEWS.radio=()=>`
+  ${intro('radio','RFID/NFC és SDR (rádió) felderítés. Megfelelő hardver kell: NFC-olvasó (PN532/ACR122) vagy RTL-SDR dongle. Csak saját vagy engedélyezett eszköz/jel!','warn')}
+  <div class="tbar"><button class="btn sm" data-act="radioRefresh">${svg(GL.refresh,2)} Hardver</button><span class="grow"></span><span id="radStatus" class="muted"></span></div>
+  <div class="scan-cat" style="padding:6px 2px 2px">Művelet</div>
+  <div id="radTools" class="scan-grid"><div class="dempty">Betöltés…</div></div>
+  <div class="grow1"><div class="console"><div class="cons-hd">RFID / SDR terminál<span class="ch-r"><span class="ttimer" id="radioOutTimer" style="display:none"></span><span class="tcount">0 sor</span><button class="cbtn" data-act="radioClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="radioOut" placeholder="szűrés…"></span></div><div class="term" id="radioOut" tabindex="0"><div class="t-welcome">Válassz műveletet (NFC/SDR). A kimenet itt folyik.</div></div></div></div>`;
+MOUNT.radio=()=>radioLoad();
+async function radioLoad(){const s=$('#radStatus');try{const d=await fetch('/api/radio/status').then(r=>r.json());RAD.tools=d.tools||[];RAD.extra=d.extra||{};const ex=Object.keys(RAD.extra).filter(k=>RAD.extra[k]);if(s)s.textContent=ex.length?('extra: '+ex.join(', ')):'';radToolsRender();}catch(e){if(s)s.textContent='—';}}
+function radToolsRender(){const c=$('#radTools');if(!c)return;c.innerHTML=RAD.tools.length?RAD.tools.map(t=>`<button class="scan-btn" data-act="radioScan" data-k="${esc(t.key)}"><span class="si">${t.installed?'●':'○'}</span><b>${esc(t.label)}</b><small>${t.installed?'kész':'nincs eszköz/tool'} · ${esc(t.hint)}</small></button>`).join(''):'<div class="dempty">Nincs elérhető eszköz.</div>';}
+
 /* ── PENTEST (egyszerűsített, ugyanarra a backendre) ── */
 let PT={scripts:[],selId:null,tools:{},installing:null};
 VIEWS.pentest=()=>`
@@ -643,6 +717,22 @@ const ACT={
   wifiteSend(){const el=$('#wifiteOutCmd');const v=(el?.value||'').trim();if(!v)return;wfSendInput({text:v});renderLine({raw:'> '+v,type:'action'},'wifiteOut');el.value='';},
   wifiteTarget(b){wfSendInput({text:b.dataset.k});renderLine({raw:'> célpont: '+b.dataset.k,type:'action'},'wifiteOut');},
   wifiteHsRefresh(){wfLoadHandshakes();},
+  hsLoad(){hsViewLoad();},
+  fndLoad(){fndViewLoad();},
+  waPick(b){WA.tool=b.dataset.k;waToolsRender();},
+  async waRun(){const i=$('#webappOutCmd');const url=((i&&i.value)||'').trim();if(!url){toast('Írd be a cél URL-t a parancssorba','warning');return;}const t=WA.tools.find(x=>x.key===WA.tool);if(t&&!t.installed)toast('Ez az eszköz nincs telepítve a gépen','warning');renderLine({raw:'$ '+WA.tool+' → '+url,type:'action'},'webappOut');try{const d=await fetch('/api/webapp/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:WA.tool,target:url})}).then(r=>r.json());if(d&&d.error){toast(d.error,'error');renderLine({raw:'[!] '+d.error,type:'error'},'webappOut');}}catch(e){toast('Hálózati hiba','error');}},
+  waStop(){fetch('/api/webapp/stop',{method:'POST'}).catch(()=>{});},
+  waClear(){termClear('webappOut');},
+  adbRefresh(){adbLoad();},
+  adbPick(b){AND.serial=b.dataset.k;adbDevsRender();},
+  async adbAction(b){const action=b.dataset.k;if(!AND.avail){toast('Az adb nem elérhető','warning');return;}if(!AND.serial){toast('Nincs kiválasztott eszköz','warning');return;}renderLine({raw:'$ adb -s '+AND.serial+' · '+action,type:'action'},'androidOut');try{const d=await fetch('/api/android/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,serial:AND.serial})}).then(r=>r.json());if(d&&d.error){toast(d.error,'error');renderLine({raw:'[!] '+d.error,type:'error'},'androidOut');}}catch(e){toast('Hálózati hiba','error');}},
+  adbStop(){fetch('/api/android/stop',{method:'POST'}).catch(()=>{});},
+  adbClear(){termClear('androidOut');},
+  radioRefresh(){radioLoad();},
+  async radioScan(b){const kind=b.dataset.k;const t=RAD.tools.find(x=>x.key===kind);if(t&&!t.installed)toast('Ehhez hardver/tool kell','warning');renderLine({raw:'$ '+kind+' felderítés…',type:'action'},'radioOut');try{const d=await fetch('/api/radio/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind})}).then(r=>r.json());if(d&&d.error){toast(d.error,'error');renderLine({raw:'[!] '+d.error,type:'error'},'radioOut');}}catch(e){toast('Hálózati hiba','error');}},
+  radioStop(){fetch('/api/radio/stop',{method:'POST'}).catch(()=>{});},
+  radioClear(){termClear('radioOut');},
+  async btScan(b){const l=$('#btList');const dur=($('#btDur')&&$('#btDur').value)||8;if(l)l.innerHTML='<div class="dempty">Keresés… (~'+dur+' mp, ne zárd be)</div>';if(b)b.disabled=true;try{const d=await fetch('/api/bt/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:+dur})}).then(r=>r.json());if(d.error){l.innerHTML='<div class="dempty">'+esc(d.message||'Nem elérhető.')+'</div>';}else{const ds=d.devices||[];l.innerHTML=ds.length?ds.map(x=>`<div class="hsitem">${L('b')}<span class="hn" title="${esc(x.mac)}">${esc(x.name||'(névtelen)')}</span><span class="muted">${esc(x.mac)}</span></div>`).join(''):'<div class="dempty">Nem találtam eszközt a közelben.</div>';applog('b','BT keresés: '+ds.length+' eszköz');}}catch(e){l.innerHTML='<div class="dempty">Hálózati hiba.</div>';}if(b)b.disabled=false;},
   wifiteNaplo(){const s=STATE.wifite;const sum=`Összesítés: ${s.networks} hálózat, ${s.handshakes} handshake/PMKID, ${s.cracked} feltört.`;saveToNaplo('wifi','WiFi audit — '+tDate(Date.now()),sum+'\n\n'+termText('wifiteOut'));},
   /* védelem */
   extSel(b){const k=b.dataset.k;EXTSEL=(EXTSEL===k)?null:k;renderDrawer();if(curView==='vedelem'){const tb=$('#vedTbar');if(tb)tb.outerHTML=vedTbarHtml();if(EXTSEL){const d=DEFENSES.find(x=>x.name===EXTSEL);if(d&&d.key)setTimeout(()=>defRefreshOne(d.key),30);}}},
@@ -800,6 +890,21 @@ try{socket=io();
   socket.on('connect',()=>{connBadge(true);applog('g','Kapcsolódva a szerverhez');});
   socket.on('disconnect',()=>{connBadge(false);applog('r','Megszakadt a kapcsolat');});
   socket.on('connect_error',()=>connBadge(false));
+  /* webapp */
+  socket.on('webapp:start',({tool,target})=>{termClear('webappOut');say('Webapp: '+tool+' → '+target,'b');timerStart('webappOut');});
+  socket.on('webapp:output',d=>renderLine(d,'webappOut'));
+  socket.on('webapp:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'webappOut');say('Webapp hiba','r');timerStop('webappOut');});
+  socket.on('webapp:done',({code,stopped})=>{timerStop('webappOut');say(stopped?'Webapp leállítva':(code===0?'Webapp kész':'Webapp vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
+  /* android */
+  socket.on('android:start',({action,serial})=>{termClear('androidOut');say('Android: '+action+' ('+serial+')','b');timerStart('androidOut');});
+  socket.on('android:output',d=>renderLine(d,'androidOut'));
+  socket.on('android:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'androidOut');say('Android hiba','r');timerStop('androidOut');});
+  socket.on('android:done',({code,stopped})=>{timerStop('androidOut');say(stopped?'Android leállítva':(code===0?'Android kész':'Android vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
+  /* radio (rfid/sdr) */
+  socket.on('radio:start',({kind})=>{termClear('radioOut');say('RFID/SDR: '+kind+' indul','b');timerStart('radioOut');});
+  socket.on('radio:output',d=>renderLine(d,'radioOut'));
+  socket.on('radio:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'radioOut');say('RFID/SDR hiba','r');timerStop('radioOut');});
+  socket.on('radio:done',({code,stopped})=>{timerStop('radioOut');say(stopped?'Leállítva':(code===0?'Kész':'Vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
   /* nmap */
   socket.on('nmap:start',({target,scanType,useSudo})=>{STATE.nmap={running:true,meta:{target,scanType}};_nmHostMap={};_nmHostCur=null;NMDATA={hosts:[],ports:[],ips:[],vuln:[],error:[]};
     termClear('nmapOut');$('#nmTiles')&&($('#nmTiles').style.display='none');const pb=$('#nmPhases');if(pb){pb.style.display='';$$('.phstep').forEach(x=>x.classList.remove('done','active'));}nmPhase(1);timerStart('nmapOut');say('Nmap indul: '+target+' ('+scanType+')','b');

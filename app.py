@@ -929,6 +929,334 @@ def pt_findings():
         return jsonify(lines=[])
 
 
+# ─── Találatok: az összes /tmp/*_t*.findings aggregálva ──────────────
+@app.route("/api/findings")
+def all_findings():
+    import glob
+    out = []
+    try:
+        paths = sorted(glob.glob("/tmp/*_t*.findings"),
+                       key=lambda p: -os.path.getmtime(p))
+    except OSError:
+        paths = []
+    for p in paths[:50]:
+        n = os.path.basename(p)
+        m = re.match(r"^(.*)_t([1-6])\.findings$", n)
+        try:
+            with open(p, encoding="utf-8") as fh:
+                lines = [l for l in fh.read().split("\n") if l.strip()]
+        except OSError:
+            continue
+        out.append({"name": n,
+                    "script": m.group(1) if m else n,
+                    "t": m.group(2) if m else "",
+                    "lines": lines[:200]})
+    return jsonify(out)
+
+
+# ─── Bluetooth / BLE felderítés (grácisan lebomlik, ha nincs adapter) ─
+def _bt_available():
+    import shutil
+    return bool(shutil.which("bluetoothctl"))
+
+
+@app.route("/api/bt/status")
+def bt_status():
+    if not _bt_available():
+        return jsonify(available=False, adapters=[],
+                       message="A bluetoothctl nem található (Linux + Bluetooth-adapter kell).")
+    adapters = []
+    try:
+        out = subprocess.run(["bluetoothctl", "list"],
+                             capture_output=True, text=True, timeout=5).stdout
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[0] == "Controller":
+                adapters.append({"mac": parts[1], "name": " ".join(parts[2:]).replace("[default]", "").strip()})
+    except Exception as e:
+        return jsonify(available=False, adapters=[], message=str(e))
+    return jsonify(available=True, adapters=adapters)
+
+
+@app.route("/api/bt/scan", methods=["POST"])
+def bt_scan():
+    if not _bt_available():
+        return jsonify(error="unavailable",
+                       message="A Bluetooth nem elérhető ezen a gépen (Linux + adapter kell).")
+    try:
+        dur = int((request.get_json(silent=True) or {}).get("seconds", 8))
+    except Exception:
+        dur = 8
+    dur = max(3, min(30, dur))
+    devices = {}
+    try:
+        subprocess.run(["bluetoothctl", "power", "on"],
+                       capture_output=True, text=True, timeout=5)
+        subprocess.run(["bluetoothctl", "--timeout", str(dur), "scan", "on"],
+                       capture_output=True, text=True, timeout=dur + 8)
+        out = subprocess.run(["bluetoothctl", "devices"],
+                             capture_output=True, text=True, timeout=6).stdout
+        for line in out.splitlines():
+            parts = line.split(maxsplit=2)
+            if len(parts) >= 2 and parts[0] == "Device":
+                mac = parts[1]
+                devices[mac] = {"mac": mac, "name": parts[2] if len(parts) > 2 else ""}
+    except subprocess.TimeoutExpired:
+        pass
+    except Exception as e:
+        return jsonify(error="scan_failed", message=str(e))
+    return jsonify(devices=list(devices.values()))
+
+
+# ─── Webapp-vizsgálat (whatweb / nikto / sqlmap, streamelt kimenet) ──
+WEBAPP_TOOLS = {
+    "whatweb": {"bin": "whatweb", "label": "WhatWeb — ujjlenyomat",
+                "args": lambda t: ["whatweb", "-a", "3", t]},
+    "nikto":   {"bin": "nikto", "label": "Nikto — sérülékenység-szken",
+                "args": lambda t: ["nikto", "-h", t]},
+    "sqlmap":  {"bin": "sqlmap", "label": "sqlmap — SQLi-teszt",
+                "args": lambda t: ["sqlmap", "-u", t, "--batch", "--crawl=1"]},
+}
+
+
+def _valid_webtarget(t):
+    if not t or len(t) > 2048:
+        return False
+    if re.search(r"[\s;&|`$><\\\"']", t):
+        return False
+    return bool(re.match(r"^(https?://)?[\w.\-]+(:\d+)?(/[\w.\-/?=&%#+~:@!,;*']*)?$", t))
+
+
+def _run_webapp(tool, target):
+    import shutil
+    spec = WEBAPP_TOOLS.get(tool)
+    if not spec:
+        socketio.emit("webapp:error", {"message": "ismeretlen eszköz"})
+        return
+    binp = shutil.which(spec["bin"])
+    if not binp:
+        socketio.emit("webapp:error", {
+            "message": f"A(z) {spec['bin']} nincs telepítve (Kali konténer / apt).", "tool": tool})
+        return
+    argv = spec["args"](target)
+    argv[0] = binp
+
+    def worker():
+        try:
+            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    text=True, bufsize=1)
+        except Exception as e:
+            socketio.emit("webapp:error", {"message": str(e)})
+            return
+        active["webapp"] = proc
+        socketio.emit("webapp:start", {"tool": tool, "target": target})
+        for line in proc.stdout:
+            if line.strip():
+                socketio.emit("webapp:output", {"raw": line.rstrip("\n"), "type": "out"})
+        code = proc.wait()
+        active.pop("webapp", None)
+        socketio.emit("webapp:done", {"code": code})
+    socketio.start_background_task(worker)
+
+
+@app.route("/api/webapp/tools")
+def webapp_tools():
+    import shutil
+    return jsonify([{"key": k, "label": v["label"], "installed": bool(shutil.which(v["bin"]))}
+                    for k, v in WEBAPP_TOOLS.items()])
+
+
+@app.route("/api/webapp/scan", methods=["POST"])
+def webapp_scan():
+    body = request.get_json(force=True, silent=True) or {}
+    tool = body.get("tool", "whatweb")
+    target = (body.get("target") or "").strip()
+    if tool not in WEBAPP_TOOLS:
+        return jsonify(error="ismeretlen eszköz"), 400
+    if not _valid_webtarget(target):
+        return jsonify(error="érvénytelen cél (http/https URL vagy host kell)"), 400
+    _run_webapp(tool, target)
+    return jsonify(status="started")
+
+
+@app.route("/api/webapp/stop", methods=["POST"])
+def webapp_stop():
+    p = active.get("webapp")
+    if p:
+        try:
+            p.send_signal(signal.SIGINT)
+        except Exception:
+            pass
+        active.pop("webapp", None)
+        socketio.emit("webapp:done", {"code": None, "stopped": True})
+        return jsonify(status="stopped")
+    return jsonify(status="not_running")
+
+
+# ─── Android / mobil (ADB: eszköz-infó, csomagok, logcat) ────────────
+ANDROID_ACTIONS = {
+    "info":     lambda s: ["adb", "-s", s, "shell", "getprop"],
+    "packages": lambda s: ["adb", "-s", s, "shell", "pm", "list", "packages", "-3"],
+    "logcat":   lambda s: ["adb", "-s", s, "logcat", "-d", "-t", "200"],
+}
+
+
+def _adb_available():
+    import shutil
+    return bool(shutil.which("adb"))
+
+
+@app.route("/api/android/devices")
+def android_devices():
+    if not _adb_available():
+        return jsonify(available=False, devices=[],
+                       message="Az adb nincs telepítve (android-platform-tools kell).")
+    devices = []
+    try:
+        out = subprocess.run(["adb", "devices", "-l"],
+                             capture_output=True, text=True, timeout=8).stdout
+        for line in out.splitlines()[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            serial = parts[0]
+            state = parts[1] if len(parts) > 1 else ""
+            model = ""
+            for p in parts[2:]:
+                if p.startswith("model:"):
+                    model = p.split(":", 1)[1]
+            devices.append({"serial": serial, "state": state, "model": model})
+    except Exception as e:
+        return jsonify(available=True, devices=[], message=str(e))
+    return jsonify(available=True, devices=devices)
+
+
+@app.route("/api/android/action", methods=["POST"])
+def android_action():
+    if not _adb_available():
+        return jsonify(error="Az adb nem elérhető ezen a gépen.")
+    body = request.get_json(force=True, silent=True) or {}
+    action = body.get("action")
+    serial = (body.get("serial") or "").strip()
+    if action not in ANDROID_ACTIONS:
+        return jsonify(error="ismeretlen művelet"), 400
+    if not re.match(r"^[\w.:\-]+$", serial):
+        return jsonify(error="érvénytelen eszköz-azonosító"), 400
+    argv = ANDROID_ACTIONS[action](serial)
+
+    def worker():
+        import shutil
+        argv[0] = shutil.which("adb") or "adb"
+        try:
+            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    text=True, bufsize=1)
+        except Exception as e:
+            socketio.emit("android:error", {"message": str(e)})
+            return
+        active["android"] = proc
+        socketio.emit("android:start", {"action": action, "serial": serial})
+        n = 0
+        for line in proc.stdout:
+            if line.strip():
+                n += 1
+                if n <= 2000:
+                    socketio.emit("android:output", {"raw": line.rstrip("\n"), "type": "out"})
+        code = proc.wait()
+        active.pop("android", None)
+        socketio.emit("android:done", {"code": code})
+    socketio.start_background_task(worker)
+    return jsonify(status="started")
+
+
+@app.route("/api/android/stop", methods=["POST"])
+def android_stop():
+    p = active.get("android")
+    if p:
+        try:
+            p.terminate()
+        except Exception:
+            pass
+        active.pop("android", None)
+        socketio.emit("android:done", {"code": None, "stopped": True})
+        return jsonify(status="stopped")
+    return jsonify(status="not_running")
+
+
+# ─── RFID-NFC / SDR (rádió) felderítés (hardverfüggő, grácis) ────────
+RADIO_TOOLS = {
+    "nfc": {"bin": "nfc-list", "label": "NFC / RFID — olvasás",
+            "hint": "libnfc + olvasó (PN532/ACR122)", "args": ["nfc-list"]},
+    "sdr": {"bin": "rtl_433", "label": "SDR — 433 MHz figyelés (20s)",
+            "hint": "RTL-SDR dongle", "args": ["rtl_433", "-T", "20"]},
+}
+
+
+def _radio_run(kind):
+    import shutil
+    spec = RADIO_TOOLS.get(kind)
+    if not spec:
+        socketio.emit("radio:error", {"message": "ismeretlen típus"})
+        return
+    binp = shutil.which(spec["bin"])
+    if not binp:
+        socketio.emit("radio:error", {
+            "message": f"A(z) {spec['bin']} nincs telepítve vagy nincs hardver.", "kind": kind})
+        return
+    argv = list(spec["args"])
+    argv[0] = binp
+
+    def worker():
+        try:
+            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    text=True, bufsize=1)
+        except Exception as e:
+            socketio.emit("radio:error", {"message": str(e)})
+            return
+        active["radio"] = proc
+        socketio.emit("radio:start", {"kind": kind})
+        for line in proc.stdout:
+            if line.strip():
+                socketio.emit("radio:output", {"raw": line.rstrip("\n"), "type": "out"})
+        code = proc.wait()
+        active.pop("radio", None)
+        socketio.emit("radio:done", {"code": code})
+    socketio.start_background_task(worker)
+
+
+@app.route("/api/radio/status")
+def radio_status():
+    import shutil
+    tools = [{"key": k, "label": v["label"], "hint": v["hint"],
+              "installed": bool(shutil.which(v["bin"]))} for k, v in RADIO_TOOLS.items()]
+    extra = {b: bool(shutil.which(b)) for b in ["proxmark3", "hackrf_info", "rtl_test", "rtl_eeprom"]}
+    return jsonify(tools=tools, extra=extra)
+
+
+@app.route("/api/radio/scan", methods=["POST"])
+def radio_scan():
+    body = request.get_json(force=True, silent=True) or {}
+    kind = body.get("kind")
+    if kind not in RADIO_TOOLS:
+        return jsonify(error="ismeretlen típus"), 400
+    _radio_run(kind)
+    return jsonify(status="started")
+
+
+@app.route("/api/radio/stop", methods=["POST"])
+def radio_stop():
+    p = active.get("radio")
+    if p:
+        try:
+            p.terminate()
+        except Exception:
+            pass
+        active.pop("radio", None)
+        socketio.emit("radio:done", {"code": None, "stopped": True})
+        return jsonify(status="stopped")
+    return jsonify(status="not_running")
+
+
 # ─── Socket.IO: pentest run/kill ─────────────────────────────────────
 @socketio.on("pentest:run")
 def on_pt_run(data):
