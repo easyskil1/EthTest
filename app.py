@@ -960,6 +960,18 @@ def _bt_available():
     return bool(shutil.which("bluetoothctl"))
 
 
+def _bt_env():
+    # A Flask a Kali-konténerben fut; a bluetoothctl a HOST bluetoothd-jét a host
+    # D-Bus socketjén éri el. Előbb a (bekötött) /run/dbus, különben a --pid=host miatt
+    # elérhető /proc/1/root/run/dbus. Macen egyik sincs -> változatlan env (grácis).
+    env = os.environ.copy()
+    for cand in ("/run/dbus/system_bus_socket", "/proc/1/root/run/dbus/system_bus_socket"):
+        if os.path.exists(cand):
+            env["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=" + cand
+            break
+    return env
+
+
 @app.route("/api/bt/status")
 def bt_status():
     if not _bt_available():
@@ -967,7 +979,7 @@ def bt_status():
                        message="A bluetoothctl nem található (Linux + Bluetooth-adapter kell).")
     adapters = []
     try:
-        out = subprocess.run(["bluetoothctl", "list"],
+        out = subprocess.run(["bluetoothctl", "list"], env=_bt_env(),
                              capture_output=True, text=True, timeout=5).stdout
         for line in out.splitlines():
             parts = line.split()
@@ -990,11 +1002,12 @@ def bt_scan():
     dur = max(3, min(30, dur))
     devices = {}
     try:
-        subprocess.run(["bluetoothctl", "power", "on"],
+        btenv = _bt_env()
+        subprocess.run(["bluetoothctl", "power", "on"], env=btenv,
                        capture_output=True, text=True, timeout=5)
-        subprocess.run(["bluetoothctl", "--timeout", str(dur), "scan", "on"],
+        subprocess.run(["bluetoothctl", "--timeout", str(dur), "scan", "on"], env=btenv,
                        capture_output=True, text=True, timeout=dur + 8)
-        out = subprocess.run(["bluetoothctl", "devices"],
+        out = subprocess.run(["bluetoothctl", "devices"], env=btenv,
                              capture_output=True, text=True, timeout=6).stdout
         for line in out.splitlines():
             parts = line.split(maxsplit=2)
@@ -1771,6 +1784,34 @@ PENTEST_TOOLS = {
     "exiftool":    ("exiftool", "libimage-exiftool-perl"),
     "steghide":    ("steghide", "steghide"),
     "searchsploit":("searchsploit", "exploitdb"),
+    # WiFi (4.7) — a bináris = a kulcs, hogy a node-szintű detektálás egyezzen
+    "iw":          ("iw", "iw"),
+    "airodump-ng": ("airodump-ng", "aircrack-ng"),
+    "aireplay-ng": ("aireplay-ng", "aircrack-ng"),
+    "aircrack-ng": ("aircrack-ng", "aircrack-ng"),
+    "hcxdumptool": ("hcxdumptool", "hcxdumptool"),
+    "hcxtools":    ("hcxpcapngtool", "hcxtools"),
+    # Bluetooth (4.9)
+    "bluetoothctl":("bluetoothctl", "bluez"),
+    "sdptool":     ("sdptool", "bluez"),
+    "gatttool":    ("gatttool", "bluez"),
+    "l2ping":      ("l2ping", "bluez"),
+    "btmon":       ("btmon", "bluez"),
+    "obexftp":     ("obexftp", "obexftp"),
+    "spooftooph":  ("spooftooph", "spooftooph"),
+    "redfang":     ("redfang", "redfang"),
+    "bluelog":     ("bluelog", "bluelog"),
+    "btlejack":    ("btlejack", "btlejack"),
+    # Android (4.10)
+    "adb":         ("adb", "adb"),
+    "apktool":     ("apktool", "apktool"),
+    "jadx":        ("jadx", "jadx"),
+    "aapt":        ("aapt", "aapt"),
+    # Hálózat / web / rendszer (0.4)
+    "whois":       ("whois", "whois"),
+    "smbmap":      ("smbmap", "smbmap"),
+    "ssh-audit":   ("ssh-audit", "ssh-audit"),
+    "inotifywait": ("inotifywait", "inotify-tools"),
 }
 
 

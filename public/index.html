@@ -435,6 +435,39 @@ pre.outpre{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.5;whi
 @container app (max-width:599px){.menubar .m:not(.keep){display:none} .cmd input{width:92px} .toolbar .hs{display:none} .drawer{width:calc(100% - var(--rail))} .status .hs2{display:none} :root{--label-w:112px}}
 @container app (max-height:520px){.note.intro{display:none} .rbtn span:not(.bdg){display:none} .rbtn{padding:8px 1px}}
 @media print{.menubar,.toolbar,.tree,.rail,.drawer,.status,.toasts{display:none!important}.app{zoom:1;width:auto;height:auto;display:block}.main{overflow:visible}html,body{overflow:visible}}
+
+/* ── PenTest folyamat-építő (elágazó fa) ── */
+.ptflow{display:flex;flex-direction:column;font-size:12px}
+.ptfrow{display:flex;align-items:center;gap:8px;padding:2px 10px 6px}
+.ptfrow label{font-size:11px;color:var(--muted);min-width:46px}
+.ptfbar{display:flex;align-items:center;gap:8px;padding:0 10px 4px;flex-wrap:wrap}
+.pttree{padding:2px 8px}
+.ptnode{border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin:4px 0;background:var(--surface);cursor:pointer;transition:border-color .1s}
+.ptnode.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ptnode.warn{border-left:3px solid #e3b341}
+.ptnhead{display:flex;align-items:center;gap:6px}
+.ptnhead b{font-size:12px}
+.ptcat{font-size:9px;text-transform:uppercase;letter-spacing:.03em;padding:1px 5px;border-radius:3px;color:#fff;background:var(--c,#888);white-space:nowrap}
+.ptcat.sm{background:transparent;color:var(--c,#888);border:1px solid var(--c,#888);padding:1px 6px;font-weight:600;font-size:11px;text-transform:none;letter-spacing:0}
+.ptleaf{font-size:10px;color:#3fb950;border:1px solid #3fb95066;border-radius:3px;padding:0 4px}
+.ptx{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+.ptx:hover{color:#ff5252}
+.ptcmd{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:3px 6px;margin:4px 0;font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--muted)}
+.ptio{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ptchip{font-size:9px;padding:1px 6px;border-radius:9px;border:1px solid var(--c,#888);color:var(--c,#888);white-space:nowrap}
+.ptarrow{color:var(--muted);margin:0 2px}
+.ptmiss{font-size:11px;color:#e3b341;margin-top:3px}
+.ptbranch-add{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.addbr{font-size:10px;padding:2px 7px;border-radius:9px;border:1px dashed var(--line);background:none;color:var(--muted);cursor:pointer;white-space:nowrap}
+.addbr:hover,.addbr.on{border-style:solid;border-color:var(--accent);color:var(--accent)}
+.branch{margin-left:11px;padding-left:10px;border-left:1px solid var(--line)}
+.via{font-size:10px;color:var(--muted);margin:3px 0 -1px 2px}
+.ptpalette{max-height:300px;overflow:auto}
+.ptpal{display:flex;align-items:center;gap:6px}
+.ptpal:hover{background:var(--surface-2)}
+.ptpal .ptaddio{margin-left:auto;display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;max-width:46%}
+.ptrisk{font-size:9px;padding:0 5px;border-radius:3px;border:1px solid var(--c,#888);color:var(--c,#888);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.ptdot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto}
 </style>
 </head>
 <body>
